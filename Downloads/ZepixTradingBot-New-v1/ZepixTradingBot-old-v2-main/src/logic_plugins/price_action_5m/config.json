@@ -1,0 +1,74 @@
+{
+    "plugin_id": "price_action_5m",
+    "version": "1.0.0",
+    "enabled": true,
+    "shadow_mode": false,
+    
+    "metadata": {
+        "name": "V6 5M Momentum",
+        "description": "5-minute momentum trades with dual orders",
+        "author": "Zepix Team",
+        "created": "2026-01-12",
+        "category": "V6_PRICE_ACTION",
+        "timeframe": "5m"
+    },
+    
+    "settings": {
+        "supported_symbols": ["XAUUSD"],
+        "supported_timeframes": ["5"],
+        "order_routing": "DUAL_ORDERS",
+        
+        "entry_conditions": {
+            "adx_threshold": 25,
+            "adx_strength_required": "STRONG",
+            "confidence_threshold": 70,
+            "require_15m_alignment": true,
+            "require_momentum_increasing": true
+        },
+        
+        "order_configuration": {
+            "use_order_a": true,
+            "use_order_b": true,
+            "split_ratio": 0.5,
+            "order_a_target": "TP2",
+            "order_b_target": "TP1",
+            "same_sl_for_both": true
+        },
+        
+        "risk_management": {
+            "risk_multiplier": 1.0,
+            "base_risk_percentage": 1.5,
+            "max_lot_size": 0.20,
+            "max_open_trades": 4,
+            "max_daily_trades": 12,
+            "daily_loss_limit": 300.0
+        },
+        
+        "trend_pulse_integration": {
+            "enabled": true,
+            "require_pulse_alignment": true
+        },
+        
+        "exit_rules": {
+            "tp1_pips": 15,
+            "tp2_pips": 30,
+            "move_to_breakeven_after_tp1": true,
+            "breakeven_buffer_pips": 2.0
+        }
+    },
+    
+    "notifications": {
+        "notify_on_entry": true,
+        "notify_on_exit": true,
+        "notify_on_error": true,
+        "use_voice_alerts": false,
+        "telegram_bot": "notification"
+    },
+    
+    "database": {
+        "path": "data/zepix_price_action.db",
+        "table_name": "price_action_5m_trades",
+        "backup_enabled": true,
+        "sync_to_central": true
+    }
+}

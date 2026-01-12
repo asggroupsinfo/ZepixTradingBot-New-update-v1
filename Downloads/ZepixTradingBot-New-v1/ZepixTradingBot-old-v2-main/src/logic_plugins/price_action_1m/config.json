@@ -1,0 +1,74 @@
+{
+    "plugin_id": "price_action_1m",
+    "version": "1.0.0",
+    "enabled": true,
+    "shadow_mode": false,
+    
+    "metadata": {
+        "name": "V6 1M Scalping",
+        "description": "Ultra-fast 1-minute scalping with Order B only",
+        "author": "Zepix Team",
+        "created": "2026-01-12",
+        "category": "V6_PRICE_ACTION",
+        "timeframe": "1m"
+    },
+    
+    "settings": {
+        "supported_symbols": ["XAUUSD"],
+        "supported_timeframes": ["1"],
+        "order_routing": "ORDER_B_ONLY",
+        
+        "entry_conditions": {
+            "adx_threshold": 20,
+            "adx_strength_required": "MODERATE",
+            "confidence_threshold": 80,
+            "max_spread_pips": 2.0,
+            "require_market_state_alignment": true
+        },
+        
+        "order_configuration": {
+            "use_order_a": false,
+            "use_order_b": true,
+            "target_level": "TP1",
+            "quick_exit_enabled": true
+        },
+        
+        "risk_management": {
+            "risk_multiplier": 0.5,
+            "base_risk_percentage": 1.0,
+            "max_lot_size": 0.10,
+            "max_open_trades": 3,
+            "max_daily_trades": 20,
+            "daily_loss_limit": 200.0
+        },
+        
+        "trend_pulse_integration": {
+            "enabled": true,
+            "require_pulse_alignment": true,
+            "min_bull_count_for_buy": 3,
+            "min_bear_count_for_sell": 3
+        },
+        
+        "exit_rules": {
+            "tp1_pips": 10,
+            "sl_pips": 15,
+            "use_trailing_stop": false,
+            "max_hold_time_minutes": 15
+        }
+    },
+    
+    "notifications": {
+        "notify_on_entry": true,
+        "notify_on_exit": true,
+        "notify_on_error": true,
+        "use_voice_alerts": false,
+        "telegram_bot": "notification"
+    },
+    
+    "database": {
+        "path": "data/zepix_price_action.db",
+        "table_name": "price_action_1m_trades",
+        "backup_enabled": true,
+        "sync_to_central": true
+    }
+}

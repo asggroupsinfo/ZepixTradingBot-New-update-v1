@@ -1,0 +1,64 @@
+{
+    "plugin_id": "price_action_1h",
+    "version": "1.0.0",
+    "enabled": true,
+    "shadow_mode": false,
+    
+    "metadata": {
+        "name": "V6 1H Swing",
+        "description": "1-hour swing trades with Order A only",
+        "author": "Zepix Team",
+        "created": "2026-01-12",
+        "category": "V6_PRICE_ACTION",
+        "timeframe": "1h"
+    },
+    
+    "settings": {
+        "supported_symbols": ["XAUUSD"],
+        "supported_timeframes": ["60"],
+        "order_routing": "ORDER_A_ONLY",
+        
+        "entry_conditions": {
+            "confidence_threshold": 60,
+            "require_4h_alignment": true,
+            "require_1d_alignment": true,
+            "higher_tf_weight": 2.0
+        },
+        
+        "order_configuration": {
+            "use_order_a": true,
+            "use_order_b": false,
+            "target_level": "TP2",
+            "extended_tp_enabled": true
+        },
+        
+        "risk_management": {
+            "risk_multiplier": 1.5,
+            "base_risk_percentage": 2.0,
+            "max_lot_size": 0.30,
+            "max_open_trades": 2,
+            "max_daily_trades": 5,
+            "daily_loss_limit": 500.0
+        },
+        
+        "trend_pulse_integration": {
+            "enabled": false,
+            "use_traditional_tf_trends": true
+        }
+    },
+    
+    "notifications": {
+        "notify_on_entry": true,
+        "notify_on_exit": true,
+        "notify_on_error": true,
+        "use_voice_alerts": false,
+        "telegram_bot": "notification"
+    },
+    
+    "database": {
+        "path": "data/zepix_price_action.db",
+        "table_name": "price_action_1h_trades",
+        "backup_enabled": true,
+        "sync_to_central": true
+    }
+}

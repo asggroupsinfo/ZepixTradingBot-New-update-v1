@@ -1,0 +1,88 @@
+{
+    "telegram_controller_token": "${TELEGRAM_CONTROLLER_TOKEN}",
+    "telegram_notification_token": "${TELEGRAM_NOTIFICATION_TOKEN}",
+    "telegram_analytics_token": "${TELEGRAM_ANALYTICS_TOKEN}",
+    "telegram_token": "${TELEGRAM_MAIN_TOKEN}",
+    "telegram_chat_id": "YOUR_CHAT_ID",
+    
+    "mt5_login": "YOUR_MT5_LOGIN",
+    "mt5_password": "${MT5_PASSWORD}",
+    "mt5_server": "MetaQuotesDemo-MT5",
+    "mt5_path": "C:\\Program Files\\MetaTrader 5\\terminal64.exe",
+    
+    "plugin_system": {
+        "enabled": true,
+        "plugin_directory": "src/logic_plugins",
+        "auto_discover": true,
+        "max_plugin_execution_time": 5.0,
+        "dual_core_mode": true
+    },
+    
+    "plugins": {
+        "combined_v3": {
+            "enabled": true,
+            "shadow_mode": false,
+            "type": "V3_COMBINED",
+            "database": "data/zepix_combined.db"
+        },
+        "price_action_1m": {
+            "enabled": true,
+            "shadow_mode": false,
+            "type": "V6_PRICE_ACTION",
+            "database": "data/zepix_price_action.db"
+        },
+        "price_action_5m": {
+            "enabled": true,
+            "shadow_mode": false,
+            "type": "V6_PRICE_ACTION",
+            "database": "data/zepix_price_action.db"
+        },
+        "price_action_15m": {
+            "enabled": true,
+            "shadow_mode": false,
+            "type": "V6_PRICE_ACTION",
+            "database": "data/zepix_price_action.db"
+        },
+        "price_action_1h": {
+            "enabled": true,
+            "shadow_mode": false,
+            "type": "V6_PRICE_ACTION",
+            "database": "data/zepix_price_action.db"
+        }
+    },
+    
+    "symbol_config": {
+        "XAUUSD": {
+            "symbol_name": "XAUUSD",
+            "digits": 2,
+            "pip_value_per_std_lot": 1.0,
+            "min_lot": 0.01,
+            "max_lot": 50.0,
+            "max_spread_pips": 3.0
+        }
+    },
+    
+    "bot_config": {
+        "combinedlogic-1": {
+            "enabled": true,
+            "lot_multiplier": 1.25,
+            "risk_per_trade": 1.5,
+            "max_daily_trades": 10,
+            "logic_route": "LOGIC1"
+        },
+        "combinedlogic-2": {
+            "enabled": true,
+            "lot_multiplier": 1.0,
+            "risk_per_trade": 1.0,
+            "max_daily_trades": 8,
+            "logic_route": "LOGIC2"
+        },
+        "combinedlogic-3": {
+            "enabled": true,
+            "lot_multiplier": 0.625,
+            "risk_per_trade": 2.0,
+            "max_daily_trades": 5,
+            "logic_route": "LOGIC3"
+        }
+    }
+}

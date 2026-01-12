@@ -1,0 +1,131 @@
+{
+    "plugin_id": "combined_v3",
+    "version": "1.0.0",
+    "enabled": true,
+    "shadow_mode": false,
+    
+    "metadata": {
+        "name": "V3 Combined Logic",
+        "description": "12-signal V3 system with dual orders and MTF 4-pillar trends",
+        "author": "Zepix Team",
+        "created": "2026-01-12",
+        "category": "V3_COMBINED",
+        "logic_type": "LEGACY_V3"
+    },
+    
+    "settings": {
+        "supported_symbols": ["XAUUSD"],
+        "supported_timeframes": ["5", "15", "60", "240"],
+        "max_lot_size": 1.0,
+        "daily_loss_limit": 500.0,
+        
+        "signal_handling": {
+            "entry_signals": [
+                "Institutional_Launchpad",
+                "Liquidity_Trap",
+                "Momentum_Ignition",
+                "Mitigation_Block",
+                "Golden_Pocket",
+                "Screener",
+                "entry_v3"
+            ],
+            "exit_signals": ["Exit_Bullish", "Exit_Bearish"],
+            "info_signals": ["Volatility_Squeeze", "Trend_Pulse"],
+            
+            "signal_12_enabled": true,
+            "signal_12_name": "Sideways_Breakout"
+        },
+        
+        "routing_matrix": {
+            "priority_1_overrides": {
+                "Screener": "LOGIC3",
+                "Golden_Pocket_1H": "LOGIC3",
+                "Golden_Pocket_4H": "LOGIC3"
+            },
+            "priority_2_timeframe_routing": {
+                "5": "LOGIC1",
+                "15": "LOGIC2",
+                "60": "LOGIC3",
+                "240": "LOGIC3"
+            },
+            "logic_multipliers": {
+                "LOGIC1": 1.25,
+                "LOGIC2": 1.0,
+                "LOGIC3": 0.625
+            }
+        },
+        
+        "dual_order_system": {
+            "enabled": true,
+            "order_split_ratio": 0.5,
+            "order_a_settings": {
+                "use_v3_smart_sl": true,
+                "target_level": "TP2",
+                "trailing_enabled": true
+            },
+            "order_b_settings": {
+                "use_fixed_sl": true,
+                "fixed_sl_dollars": 10.0,
+                "target_level": "TP1",
+                "trailing_enabled": false
+            }
+        },
+        
+        "mtf_4_pillar_system": {
+            "enabled": true,
+            "pillars": ["15m", "1h", "4h", "1d"],
+            "extraction_indices": [2, 3, 4, 5],
+            "ignore_indices": [0, 1],
+            "min_aligned_for_entry": 3,
+            "alignment_weight": {
+                "15m": 1.0,
+                "1h": 1.5,
+                "4h": 2.0,
+                "1d": 2.5
+            }
+        },
+        
+        "position_sizing": {
+            "base_risk_percentage": 1.5,
+            "consensus_score_range": [0, 9],
+            "consensus_multiplier_range": [0.2, 1.0],
+            "apply_logic_multiplier": true,
+            "min_lot_size": 0.01,
+            "max_lot_size": 1.0
+        },
+        
+        "trend_bypass_logic": {
+            "enabled": true,
+            "bypass_signals": ["entry_v3"],
+            "require_trend_signals": [
+                "Institutional_Launchpad",
+                "Liquidity_Trap",
+                "Momentum_Ignition"
+            ]
+        },
+        
+        "risk_management": {
+            "max_open_trades": 5,
+            "max_daily_trades": 10,
+            "max_symbol_exposure": 0.30,
+            "daily_loss_limit": 500.0
+        }
+    },
+    
+    "notifications": {
+        "notify_on_entry": true,
+        "notify_on_exit": true,
+        "notify_on_routing": true,
+        "notify_on_error": true,
+        "use_voice_alerts": true,
+        "telegram_bot": "controller"
+    },
+    
+    "database": {
+        "path": "data/zepix_combined.db",
+        "backup_enabled": true,
+        "backup_frequency": "daily",
+        "sync_to_central": true,
+        "sync_interval_minutes": 5
+    }
+}
