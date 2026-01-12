@@ -1,0 +1,71 @@
+{
+  "plugin_id": "price_action_v6",
+  "enabled": true,
+  "description": "V6 Price Action - 4 timeframes, 14 alerts, conditional routing",
+  "version": "6.0.0",
+  "author": "Zepix Team",
+  
+  "database": {
+    "path": "data/zepix_price_action.db",
+    "backup_enabled": true,
+    "sync_to_central": true
+  },
+  
+  "trading_settings": {
+    "max_concurrent_trades": 8,
+    "enabled_symbols": ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"],
+    "enabled_timeframes": ["1M", "5M", "15M", "1H"]
+  },
+  
+  "timeframe_settings": {
+    "1M": {
+      "name": "Scalping",
+      "enabled": true,
+      "dual_orders": false,
+      "sl_multiplier": 0.5,
+      "lot_multiplier": 0.5,
+      "max_hold_minutes": 30,
+      "max_concurrent": 2
+    },
+    "5M": {
+      "name": "Intraday",
+      "enabled": true,
+      "dual_orders": false,
+      "sl_multiplier": 1.0,
+      "lot_multiplier": 1.0,
+      "max_hold_minutes": 120,
+      "max_concurrent": 3
+    },
+    "15M": {
+      "name": "Swing",
+      "enabled": true,
+      "dual_orders": true,
+      "sl_multiplier": 1.5,
+      "lot_multiplier": 1.0,
+      "max_hold_minutes": 480,
+      "max_concurrent": 3
+    },
+    "1H": {
+      "name": "Position",
+      "enabled": true,
+      "dual_orders": true,
+      "sl_multiplier": 2.0,
+      "lot_multiplier": 0.75,
+      "max_hold_minutes": 1440,
+      "max_concurrent": 2
+    }
+  },
+  
+  "trend_pulse_settings": {
+    "enabled": true,
+    "require_alignment": true,
+    "min_alignment_score": 60
+  },
+  
+  "notification_settings": {
+    "send_entry_alerts": true,
+    "send_exit_alerts": true,
+    "send_timeframe_alerts": true,
+    "telegram_tag": "[V6]"
+  }
+}

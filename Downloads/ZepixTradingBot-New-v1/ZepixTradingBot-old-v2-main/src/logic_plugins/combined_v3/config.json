@@ -1,0 +1,59 @@
+{
+  "plugin_id": "combined_v3",
+  "enabled": true,
+  "description": "V3 Combined Logic - 12 signals, 3 logics, dual orders",
+  "version": "3.0.0",
+  "author": "Zepix Team",
+  
+  "database": {
+    "path": "data/zepix_combined.db",
+    "backup_enabled": true,
+    "sync_to_central": true
+  },
+  
+  "trading_settings": {
+    "max_concurrent_trades": 5,
+    "enabled_symbols": ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"],
+    "dual_orders_enabled": true,
+    "order_a_enabled": true,
+    "order_b_enabled": true
+  },
+  
+  "logic_settings": {
+    "logic1": {
+      "name": "Scalping",
+      "timeframes": ["1M", "5M"],
+      "sl_multiplier": 1.0,
+      "lot_multiplier": 1.0
+    },
+    "logic2": {
+      "name": "Intraday",
+      "timeframes": ["15M"],
+      "sl_multiplier": 1.5,
+      "lot_multiplier": 1.0
+    },
+    "logic3": {
+      "name": "Swing",
+      "timeframes": ["1H", "4H", "D1"],
+      "sl_multiplier": 2.0,
+      "lot_multiplier": 0.5
+    }
+  },
+  
+  "signal_settings": {
+    "aggressive_reversal_bypass_trend": true,
+    "aggressive_signals": [
+      "Liquidity_Trap_Reversal",
+      "Golden_Pocket_Flip",
+      "Screener_Full_Bullish",
+      "Screener_Full_Bearish"
+    ]
+  },
+  
+  "notification_settings": {
+    "send_entry_alerts": true,
+    "send_exit_alerts": true,
+    "send_profit_alerts": true,
+    "telegram_tag": "[V3]"
+  }
+}
