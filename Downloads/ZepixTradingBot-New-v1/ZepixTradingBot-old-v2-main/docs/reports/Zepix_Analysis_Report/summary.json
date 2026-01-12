@@ -1,0 +1,18 @@
+{
+  "metrics": {
+    "total": 13,
+    "imm_correct": 6,
+    "five_correct": 9,
+    "five_total": 12
+  },
+  "accuracy": {
+    "immediate_percentage": 46.15,
+    "five_candle_percentage": 75.0
+  },
+  "observations": [
+    "High success rate on 5-candle trend holding (Catching the big moves).",
+    "Immediate reaction often faces volatility/whipsaw (low immediate accuracy).",
+    "Bullish signals in downtrends are risky but filtered well by stoplosses usually (not shown).",
+    "Bearish signals had very high continuation success."
+  ]
+}

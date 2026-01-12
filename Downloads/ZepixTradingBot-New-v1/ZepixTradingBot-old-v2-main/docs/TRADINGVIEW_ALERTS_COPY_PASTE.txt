@@ -1,0 +1,89 @@
+================================================================
+ZEPIX TRADING BOT - TRADINGVIEW ALERTS (COPY & PASTE)
+================================================================
+
+INSTRUCTIONS:
+1. Open TradingView Chart for the Symbol (e.g., XAUUSD)
+2. Click "Create Alert" (Alt+A)
+3. In "Webhook URL", paste: http://3.110.221.62/webhook
+4. In "Message" box, PASTE the exact JSON code below for that symbol.
+5. Give alert a name (e.g., "GOLD ENTRY") and click Create.
+
+----------------------------------------------------------------
+1. GOLD (XAUUSD) - ENTRY ALERT
+----------------------------------------------------------------
+{
+    "symbol": "XAUUSD",
+    "type": "entry",
+    "direction": "{{strategy.order.action}}",
+    "price": {{close}},
+    "sl": {{plot("SL")}},
+    "tp": {{plot("TP")}},
+    "timestamp": "{{timenow}}"
+}
+
+----------------------------------------------------------------
+2. EURUSD - ENTRY ALERT
+----------------------------------------------------------------
+{
+    "symbol": "EURUSD",
+    "type": "entry",
+    "direction": "{{strategy.order.action}}",
+    "price": {{close}},
+    "sl": {{plot("SL")}},
+    "tp": {{plot("TP")}},
+    "timestamp": "{{timenow}}"
+}
+
+----------------------------------------------------------------
+3. GBPUSD - ENTRY ALERT
+----------------------------------------------------------------
+{
+    "symbol": "GBPUSD",
+    "type": "entry",
+    "direction": "{{strategy.order.action}}",
+    "price": {{close}},
+    "sl": {{plot("SL")}},
+    "tp": {{plot("TP")}},
+    "timestamp": "{{timenow}}"
+}
+
+----------------------------------------------------------------
+4. USDJPY - ENTRY ALERT
+----------------------------------------------------------------
+{
+    "symbol": "USDJPY",
+    "type": "entry",
+    "direction": "{{strategy.order.action}}",
+    "price": {{close}},
+    "sl": {{plot("SL")}},
+    "tp": {{plot("TP")}},
+    "timestamp": "{{timenow}}"
+}
+
+----------------------------------------------------------------
+5. EXIT ALERT (Use for ALL Symbols)
+----------------------------------------------------------------
+{
+    "symbol": "{{ticker}}",
+    "type": "exit",
+    "reason": "strategy_exit",
+    "price": {{close}},
+    "timestamp": "{{timenow}}"
+}
+
+----------------------------------------------------------------
+6. TREND ALERT (If using Trend Indicator)
+----------------------------------------------------------------
+{
+    "symbol": "{{ticker}}",
+    "type": "trend",
+    "trend": "{{plot("Trend")}}",
+    "timeframe": "{{interval}}",
+    "timestamp": "{{timenow}}"
+}
+
+================================================================
+WEBHOOK URL (Paste this in the Webhook URL field)
+================================================================
+http://3.110.221.62/webhook

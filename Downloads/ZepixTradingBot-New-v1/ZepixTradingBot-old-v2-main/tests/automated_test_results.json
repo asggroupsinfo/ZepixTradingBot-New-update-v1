@@ -1,0 +1,154 @@
+{
+  "timestamp": "2025-12-07T02:55:41.185891",
+  "summary": {
+    "total": 15,
+    "passed": 13,
+    "failed": 2,
+    "warnings": 0,
+    "pass_rate": 86.66666666666667
+  },
+  "by_category": {
+    "ReentryMenuHandler": {
+      "PASS": 5,
+      "FAIL": 0,
+      "WARN": 0
+    },
+    "ProfitBookingMenuHandler": {
+      "PASS": 2,
+      "FAIL": 0,
+      "WARN": 0
+    },
+    "Config": {
+      "PASS": 2,
+      "FAIL": 0,
+      "WARN": 0
+    },
+    "Callback Routing": {
+      "PASS": 0,
+      "FAIL": 1,
+      "WARN": 0
+    },
+    "Success Messages": {
+      "PASS": 1,
+      "FAIL": 1,
+      "WARN": 0
+    },
+    "Menu Display": {
+      "PASS": 2,
+      "FAIL": 0,
+      "WARN": 0
+    },
+    "Bot Runtime": {
+      "PASS": 1,
+      "FAIL": 0,
+      "WARN": 0
+    }
+  },
+  "all_results": [
+    {
+      "category": "ReentryMenuHandler",
+      "test": "show_reentry_menu",
+      "status": "PASS",
+      "details": "Method executed, returned: None",
+      "timestamp": "2025-12-07T02:55:40.915721"
+    },
+    {
+      "category": "ReentryMenuHandler",
+      "test": "toggle_autonomous_mode",
+      "status": "PASS",
+      "details": "Method executed, returned: True",
+      "timestamp": "2025-12-07T02:55:40.942497"
+    },
+    {
+      "category": "ReentryMenuHandler",
+      "test": "toggle_tp_continuation",
+      "status": "PASS",
+      "details": "Method executed, returned: False",
+      "timestamp": "2025-12-07T02:55:40.945860"
+    },
+    {
+      "category": "ReentryMenuHandler",
+      "test": "toggle_sl_hunt",
+      "status": "PASS",
+      "details": "Method executed, returned: False",
+      "timestamp": "2025-12-07T02:55:40.952228"
+    },
+    {
+      "category": "ReentryMenuHandler",
+      "test": "toggle_exit_continuation",
+      "status": "PASS",
+      "details": "Method executed, returned: False",
+      "timestamp": "2025-12-07T02:55:40.955051"
+    },
+    {
+      "category": "ProfitBookingMenuHandler",
+      "test": "show_profit_booking_menu",
+      "status": "PASS",
+      "details": "",
+      "timestamp": "2025-12-07T02:55:40.956653"
+    },
+    {
+      "category": "ProfitBookingMenuHandler",
+      "test": "handle_sl_mode_change",
+      "status": "PASS",
+      "details": "",
+      "timestamp": "2025-12-07T02:55:40.956653"
+    },
+    {
+      "category": "Config",
+      "test": "update_nested",
+      "status": "PASS",
+      "details": "Nested update works",
+      "timestamp": "2025-12-07T02:55:40.979357"
+    },
+    {
+      "category": "Config",
+      "test": "save",
+      "status": "PASS",
+      "details": "Config saved successfully",
+      "timestamp": "2025-12-07T02:55:40.981785"
+    },
+    {
+      "category": "Callback Routing",
+      "test": "Setup",
+      "status": "FAIL",
+      "details": "MenuCallbackHandler.__init__() takes 2 positional arguments but 3 were given",
+      "timestamp": "2025-12-07T02:55:41.013756"
+    },
+    {
+      "category": "Success Messages",
+      "test": "Re-entry toggle",
+      "status": "PASS",
+      "details": "Message received: \ud83e\udd16 Autonomous Mode: DISABLED \u274c",
+      "timestamp": "2025-12-07T02:55:41.019320"
+    },
+    {
+      "category": "Success Messages",
+      "test": "Profit SL mode",
+      "status": "FAIL",
+      "details": "No success message found",
+      "timestamp": "2025-12-07T02:55:41.019320"
+    },
+    {
+      "category": "Menu Display",
+      "test": "Re-entry menu",
+      "status": "PASS",
+      "details": "Menu displayed with 9 button rows",
+      "timestamp": "2025-12-07T02:55:41.042462"
+    },
+    {
+      "category": "Menu Display",
+      "test": "Profit Booking menu",
+      "status": "PASS",
+      "details": "Menu displayed with 10 button rows",
+      "timestamp": "2025-12-07T02:55:41.042462"
+    },
+    {
+      "category": "Bot Runtime",
+      "test": "Process Check",
+      "status": "PASS",
+      "details": "Bot running on PID 524",
+      "timestamp": "2025-12-07T02:55:41.176833"
+    }
+  ]
+}

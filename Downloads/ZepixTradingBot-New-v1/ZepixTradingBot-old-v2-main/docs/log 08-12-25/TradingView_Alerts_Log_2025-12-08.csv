@@ -1,0 +1,16 @@
+Alert ID,Ticker,Name,Description,Time
+3507855945,"OANDA:XAUUSD, 5m",5M BUY Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""buy"",""tf"":""5m"",""price"":4192.290,""strategy"":""ZepixPremium""}",2025-12-08T16:25:00Z
+3507851296,"OANDA:XAUUSD, 1h",1H Bearish BIAS.4,"{""type"":""bias"",""symbol"":""XAUUSD"",""signal"":""bear"",""tf"":""1h"",""price"":4182.905,""strategy"":""ZepixPremium""}",2025-12-08T16:00:00Z
+3507851296,"OANDA:XAUUSD, 1h",1H Bearish BIAS.4,"{""type"":""bias"",""symbol"":""XAUUSD"",""signal"":""bear"",""tf"":""1h"",""price"":4196.575,""strategy"":""ZepixPremium""}",2025-12-08T15:00:01Z
+3507858185,"OANDA:XAUUSD, 5m",5M SELL Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""sell"",""tf"":""5m"",""price"":4198.200,""strategy"":""ZepixPremium""}",2025-12-08T14:45:00Z
+3507818708,"OANDA:XAUUSD, 15m",15M Bearish TREND.2,"{""type"":""trend"",""symbol"":""XAUUSD"",""signal"":""bear"",""tf"":""15m"",""price"":4198.200,""strategy"":""ZepixPremium""}",2025-12-08T14:45:00Z
+3507855945,"OANDA:XAUUSD, 5m",5M BUY Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""buy"",""tf"":""5m"",""price"":4211.295,""strategy"":""ZepixPremium""}",2025-12-08T14:25:00Z
+3507858185,"OANDA:XAUUSD, 5m",5M SELL Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""sell"",""tf"":""5m"",""price"":4207.705,""strategy"":""ZepixPremium""}",2025-12-08T13:20:00Z
+3507855945,"OANDA:XAUUSD, 5m",5M BUY Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""buy"",""tf"":""5m"",""price"":4209.710,""strategy"":""ZepixPremium""}",2025-12-08T11:30:00Z
+3507858185,"OANDA:XAUUSD, 5m",5M SELL Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""sell"",""tf"":""5m"",""price"":4212.000,""strategy"":""ZepixPremium""}",2025-12-08T07:40:00Z
+3507855945,"OANDA:XAUUSD, 5m",5M BUY Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""buy"",""tf"":""5m"",""price"":4209.680,""strategy"":""ZepixPremium""}",2025-12-08T02:50:02Z
+3507858185,"OANDA:XAUUSD, 5m",5M SELL Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""sell"",""tf"":""5m"",""price"":4201.300,""strategy"":""ZepixPremium""}",2025-12-08T01:50:00Z
+3507859334,"OANDA:XAUUSD, 15m",15M BUY Entry (LOGIC2),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""buy"",""tf"":""15m"",""price"":4209.625,""strategy"":""ZepixPremium""}",2025-12-08T00:45:00Z
+3507862316,"OANDA:XAUUSD, 15m",15M SELL Entry (LOGIC2),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""sell"",""tf"":""15m"",""price"":4209.625,""strategy"":""ZepixPremium""}",2025-12-08T00:45:00Z
+3507816003,"OANDA:XAUUSD, 15m",15M Bullish TREND.1,"{""type"":""trend"",""symbol"":""XAUUSD"",""signal"":""bull"",""tf"":""15m"",""price"":4209.625,""strategy"":""ZepixPremium""}",2025-12-08T00:45:00Z
+3507855945,"OANDA:XAUUSD, 5m",5M BUY Entry (LOGIC1),"{""type"":""entry"",""symbol"":""XAUUSD"",""signal"":""buy"",""tf"":""5m"",""price"":4201.925,""strategy"":""ZepixPremium""}",2025-12-07T23:41:00Z

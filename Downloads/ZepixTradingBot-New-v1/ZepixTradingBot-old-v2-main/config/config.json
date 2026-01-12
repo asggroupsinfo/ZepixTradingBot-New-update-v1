@@ -1,0 +1,1145 @@
+{
+    "telegram_token": "8526101969:AAF9fqQlPbNUkb1fg3vylwG4uDNiz-Z9IY4",
+    "telegram_controller_token": "",
+    "telegram_notification_token": "",
+    "telegram_analytics_token": "",
+    "telegram_chat_id": 2139792302,
+    "allowed_telegram_user": 2139792302,
+    "mt5_login": 308646228,
+    "mt5_password": "Fast@@2801@@!!!",
+    "mt5_server": "XMGlobal-MT5 6",
+    "symbol_mapping": {
+        "XAUUSD": "GOLD",
+        "EURUSD": "EURUSD",
+        "GBPUSD": "GBPUSD",
+        "USDJPY": "USDJPY",
+        "USDCAD": "USDCAD",
+        "AUDUSD": "AUDUSD",
+        "NZDUSD": "NZDUSD",
+        "EURJPY": "EURJPY",
+        "GBPJPY": "GBPJPY",
+        "AUDJPY": "AUDJPY"
+    },
+    "v3_integration": {
+        "enabled": true,
+        "bypass_trend_check_for_v3_entries": true,
+        "mtf_pillars_only": [
+            "15m",
+            "1h",
+            "4h",
+            "1d"
+        ],
+        "order_b_fixed_sl_risk": 10.00,
+        "aggressive_reversal_signals": [
+            "Liquidity_Trap_Reversal",
+            "Golden_Pocket_Flip",
+            "Screener_Full_Bullish",
+            "Screener_Full_Bearish"
+        ],
+        "conservative_exit_signals": [
+            "Bullish_Exit",
+            "Bearish_Exit"
+        ],
+        "min_consensus_score": 5,
+        "volatility_squeeze_alert_duration": 300,
+        "signal_routing": {
+            "comment": "Timeframe-based routing with signal type overrides",
+            "tf_5m": "combinedlogic-1",
+            "tf_15m": "combinedlogic-2",
+            "tf_60m": "combinedlogic-3",
+            "tf_240m": "combinedlogic-3",
+            "screener_full_override": "combinedlogic-3",
+            "golden_pocket_higher_tf_override": "combinedlogic-3"
+        }
+    },
+    "plugin_system": {
+        "enabled": true,
+        "plugin_dir": "src/logic_plugins",
+        "auto_load": true
+    },
+    "plugins": {
+        "_template": {
+            "enabled": false,
+            "config_path": "src/logic_plugins/_template/config.json"
+        }
+    },
+    "combinedlogic-1": {
+        "name": "V3 Scalping Mode",
+        "primary_timeframe": "5m",
+        "lot_multiplier": 1.25,
+        "enabled": true
+    },
+    "combinedlogic-2": {
+        "name": "V3 Intraday Mode",
+        "primary_timeframe": "15m",
+        "lot_multiplier": 1.0,
+        "enabled": true
+    },
+    "combinedlogic-3": {
+        "name": "V3 Swing Mode",
+        "primary_timeframe": "1h",
+        "lot_multiplier": 0.625,
+        "enabled": true
+    },
+    "fixed_lot_sizes": {
+        "5000": 0.01,
+        "10000": 0.05,
+        "25000": 0.1,
+        "50000": 0.2,
+        "100000": 0.5
+    },
+    "manual_lot_overrides": {
+        "5000": 0.04
+    },
+    "risk_by_account_tier": {
+        "5000": {
+            "LOW": {
+                "risk_percent": 1.5,
+                "risk_dollars": 75
+            },
+            "MEDIUM": {
+                "risk_percent": 1.5,
+                "risk_dollars": 75
+            },
+            "HIGH": {
+                "risk_percent": 1.0,
+                "risk_dollars": 50
+            }
+        },
+        "10000": {
+            "LOW": {
+                "risk_percent": 1.5,
+                "risk_dollars": 150
+            },
+            "MEDIUM": {
+                "risk_percent": 1.5,
+                "risk_dollars": 150
+            },
+            "HIGH": {
+                "risk_percent": 1.0,
+                "risk_dollars": 100
+            }
+        },
+        "25000": {
+            "LOW": {
+                "risk_percent": 2.0,
+                "risk_dollars": 500
+            },
+            "MEDIUM": {
+                "risk_percent": 2.0,
+                "risk_dollars": 500
+            },
+            "HIGH": {
+                "risk_percent": 1.5,
+                "risk_dollars": 375
+            }
+        },
+        "50000": {
+            "LOW": {
+                "risk_percent": 2.0,
+                "risk_dollars": 1000
+            },
+            "MEDIUM": {
+                "risk_percent": 2.0,
+                "risk_dollars": 1000
+            },
+            "HIGH": {
+                "risk_percent": 2.0,
+                "risk_dollars": 1000
+            }
+        },
+        "100000": {
+            "LOW": {
+                "risk_percent": 2.0,
+                "risk_dollars": 2000
+            },
+            "MEDIUM": {
+                "risk_percent": 2.5,
+                "risk_dollars": 2500
+            },
+            "HIGH": {
+                "risk_percent": 3.0,
+                "risk_dollars": 3000
+            }
+        }
+    },
+    "symbol_config": {
+        "EURUSD": {
+            "volatility": "LOW",
+            "pip_size": 0.0001,
+            "pip_value_per_std_lot": 10.0,
+            "min_sl_distance": 0.0005,
+            "contract_size": 100000
+        },
+        "GBPUSD": {
+            "volatility": "MEDIUM",
+            "pip_size": 0.0001,
+            "pip_value_per_std_lot": 10.0,
+            "min_sl_distance": 0.0005,
+            "contract_size": 100000
+        },
+        "USDJPY": {
+            "volatility": "MEDIUM",
+            "pip_size": 0.01,
+            "pip_value_per_std_lot": 9.1,
+            "min_sl_distance": 0.05,
+            "contract_size": 100000
+        },
+        "AUDUSD": {
+            "volatility": "MEDIUM",
+            "pip_size": 0.0001,
+            "pip_value_per_std_lot": 10.0,
+            "min_sl_distance": 0.0005,
+            "contract_size": 100000
+        },
+        "USDCAD": {
+            "volatility": "MEDIUM",
+            "pip_size": 0.0001,
+            "pip_value_per_std_lot": 8.0,
+            "min_sl_distance": 0.0005,
+            "contract_size": 100000
+        },
+        "NZDUSD": {
+            "volatility": "MEDIUM",
+            "pip_size": 0.0001,
+            "pip_value_per_std_lot": 10.0,
+            "min_sl_distance": 0.0005,
+            "contract_size": 100000
+        },
+        "EURJPY": {
+            "volatility": "HIGH",
+            "pip_size": 0.01,
+            "pip_value_per_std_lot": 9.5,
+            "min_sl_distance": 0.05,
+            "contract_size": 100000
+        },
+        "GBPJPY": {
+            "volatility": "HIGH",
+            "pip_size": 0.01,
+            "pip_value_per_std_lot": 9.0,
+            "min_sl_distance": 0.05,
+            "contract_size": 100000
+        },
+        "AUDJPY": {
+            "volatility": "HIGH",
+            "pip_size": 0.01,
+            "pip_value_per_std_lot": 9.2,
+            "min_sl_distance": 0.05,
+            "contract_size": 100000
+        },
+        "XAUUSD": {
+            "volatility": "HIGH",
+            "pip_size": 0.01,
+            "pip_value_per_std_lot": 1.0,
+            "min_sl_distance": 0.1,
+            "is_gold": true,
+            "contract_size": 100
+        }
+    },
+    "re_entry_config": {
+        "max_chain_levels": 5,
+        "sl_reduction_per_level": 0.3,
+        "recovery_window_minutes": 30,
+        "min_time_between_re_entries": 0,
+        "sl_hunt_offset_pips": 1.0,
+        "tp_reentry_enabled": true,
+        "sl_hunt_reentry_enabled": true,
+        "reversal_exit_enabled": true,
+        "exit_continuation_enabled": true,
+        "price_monitor_interval_seconds": 2,
+        "tp_continuation_price_gap_pips": 2.0,
+        "sl_hunt_cooldown_seconds": 0,
+        "price_recovery_check_minutes": 0,
+        "autonomous_enabled": true,
+        "autonomous_config": {
+            "tp_continuation": {
+                "enabled": true,
+                "cooldown_seconds": 5,
+                "max_levels": 5,
+                "sl_reduction_per_level": 0.3,
+                "trend_confidence_threshold": 0.85,
+                "momentum_check_enabled": true,
+                "ma_alignment_required": true
+            },
+            "sl_hunt_recovery": {
+                "enabled": true,
+                "max_attempts": 1,
+                "recovery_window_minutes": 30,
+                "min_recovery_pips": 2,
+                "tight_sl_multiplier": 0.5,
+                "volatility_check": true,
+                "atr_threshold": 0.8,
+                "resume_to_next_level_on_success": true,
+                "recovery_windows_by_symbol": {
+                    "XAUUSD": 15,
+                    "EURUSD": 30,
+                    "GBPUSD": 30,
+                    "USDJPY": 30,
+                    "GBPJPY": 10,
+                    "AUDJPY": 10
+                }
+            },
+            "exit_continuation": {
+                "enabled": false,
+                "monitor_duration_seconds": 60,
+                "trend_check_required": true,
+                "eligible_exit_types": [
+                    "manual",
+                    "reversal"
+                ]
+            },
+            "profit_sl_hunt": {
+                "enabled": true,
+                "max_attempts_per_order": 1,
+                "stop_chain_on_fail": true,
+                "recovery_window_minutes": 30,
+                "allow_partial_progression": false,
+                "partial_success_threshold": 0.75,
+                "min_recovery_pips": 2
+            },
+            "safety_limits": {
+                "daily_recovery_attempts": 10,
+                "daily_recovery_losses": 5,
+                "max_concurrent_recoveries": 3,
+                "profit_protection_multiplier": 5,
+                "cooldown_after_limit_hours": 6
+            },
+            "recovery_priority": {
+                "highest_profit_chain": 1,
+                "longest_running_chain": 2,
+                "newest_chain": 3
+            },
+            "notifications": {
+                "enabled": true,
+                "send_tp_continuation": true,
+                "send_sl_hunt_activation": true,
+                "send_recovery_success": true,
+                "send_recovery_fail": true,
+                "send_chain_resume": true
+            },
+            "enabled": true
+        }
+    },
+    "rr_ratio": 1.5,
+    "risk_tiers": {
+        "5000": {
+            "daily_loss_limit": 100.0,
+            "max_total_loss": 500.0
+        },
+        "10000": {
+            "daily_loss_limit": 200.0,
+            "max_total_loss": 1000.0
+        },
+        "25000": {
+            "daily_loss_limit": 500.0,
+            "max_total_loss": 2500.0
+        },
+        "50000": {
+            "daily_loss_limit": 1000.0,
+            "max_total_loss": 5000.0
+        },
+        "100000": {
+            "daily_loss_limit": 2000.0,
+            "max_total_loss": 10000.0
+        }
+    },
+    "mt5_retries": 3,
+    "mt5_wait": 5,
+    "simulate_orders": false,
+    "debug": true,
+    "strategies": [
+        "combinedlogic-1",
+        "combinedlogic-2",
+        "combinedlogic-3"
+    ],
+    "timeframe_specific_config": {
+        "enabled": true,
+        "combinedlogic-1": {
+            "timeframe": "5m",
+            "lot_multiplier": 1.25,
+            "sl_multiplier": 1.0,
+            "recovery_window_minutes": 30,
+            "description": "Aggressive - Fast moves"
+        },
+        "combinedlogic-2": {
+            "timeframe": "15m",
+            "lot_multiplier": 1.0,
+            "sl_multiplier": 1.5,
+            "recovery_window_minutes": 45,
+            "description": "Balanced - Medium volatility"
+        },
+        "combinedlogic-3": {
+            "timeframe": "1h",
+            "lot_multiplier": 0.625,
+            "sl_multiplier": 2.5,
+            "recovery_window_minutes": 120,
+            "description": "Conservative - Wide breathing room"
+        }
+    },
+    "daily_reset_time": "03:35",
+    "sl_systems": {
+        "sl-1": {
+            "name": "SL-1 ORIGINAL",
+            "description": "User approved volatility-based SL system (Wide/Conservative)",
+            "symbols": {
+                "EURUSD": {
+                    "5000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 75,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 150,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 500,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.0
+                    }
+                },
+                "GBPUSD": {
+                    "5000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 75,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 150,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 500,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 2500,
+                        "risk_percent": 2.5
+                    }
+                },
+                "AUDUSD": {
+                    "5000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 75,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 150,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 500,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 2500,
+                        "risk_percent": 2.5
+                    }
+                },
+                "USDCAD": {
+                    "5000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 75,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 150,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 500,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 2500,
+                        "risk_percent": 2.5
+                    }
+                },
+                "NZDUSD": {
+                    "5000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 75,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 150,
+                        "risk_dollars": 150,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 500,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 50,
+                        "risk_dollars": 2500,
+                        "risk_percent": 2.5
+                    }
+                },
+                "USDJPY": {
+                    "5000": {
+                        "sl_pips": 166,
+                        "risk_dollars": 75,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 166,
+                        "risk_dollars": 150,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 55,
+                        "risk_dollars": 500,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 44,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 55,
+                        "risk_dollars": 2500,
+                        "risk_percent": 2.5
+                    }
+                },
+                "EURJPY": {
+                    "5000": {
+                        "sl_pips": 111,
+                        "risk_dollars": 50,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 111,
+                        "risk_dollars": 100,
+                        "risk_percent": 1.0
+                    },
+                    "25000": {
+                        "sl_pips": 41,
+                        "risk_dollars": 375,
+                        "risk_percent": 1.5
+                    },
+                    "50000": {
+                        "sl_pips": 44,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 44,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.0
+                    }
+                },
+                "GBPJPY": {
+                    "5000": {
+                        "sl_pips": 111,
+                        "risk_dollars": 50,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 111,
+                        "risk_dollars": 100,
+                        "risk_percent": 1.0
+                    },
+                    "25000": {
+                        "sl_pips": 41,
+                        "risk_dollars": 375,
+                        "risk_percent": 1.5
+                    },
+                    "50000": {
+                        "sl_pips": 44,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 44,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.0
+                    }
+                },
+                "AUDJPY": {
+                    "5000": {
+                        "sl_pips": 111,
+                        "risk_dollars": 50,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 111,
+                        "risk_dollars": 100,
+                        "risk_percent": 1.0
+                    },
+                    "25000": {
+                        "sl_pips": 41,
+                        "risk_dollars": 375,
+                        "risk_percent": 1.5
+                    },
+                    "50000": {
+                        "sl_pips": 44,
+                        "risk_dollars": 1000,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 44,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.0
+                    }
+                },
+                "XAUUSD": {
+                    "5000": {
+                        "sl_pips": 1000,
+                        "risk_dollars": 50,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 1500,
+                        "risk_dollars": 150,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 500,
+                        "risk_dollars": 500,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 500,
+                        "risk_dollars": 1250,
+                        "risk_percent": 2.5
+                    },
+                    "100000": {
+                        "sl_pips": 600,
+                        "risk_dollars": 3000,
+                        "risk_percent": 3.0
+                    }
+                }
+            }
+        },
+        "sl-2": {
+            "name": "SL-2 RECOMMENDED",
+            "description": "Realistic tighter SL system (Tight/Aggressive)",
+            "symbols": {
+                "EURUSD": {
+                    "5000": {
+                        "sl_pips": 100,
+                        "risk_dollars": 50,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 100,
+                        "risk_dollars": 100,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 350,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 30,
+                        "risk_dollars": 750,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 30,
+                        "risk_dollars": 1500,
+                        "risk_percent": 2.0
+                    }
+                },
+                "GBPUSD": {
+                    "5000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 60,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 120,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 400,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 875,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.5
+                    }
+                },
+                "AUDUSD": {
+                    "5000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 60,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 120,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 400,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 875,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.5
+                    }
+                },
+                "USDCAD": {
+                    "5000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 60,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 120,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 400,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 875,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.5
+                    }
+                },
+                "NZDUSD": {
+                    "5000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 60,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 120,
+                        "risk_dollars": 120,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 400,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 875,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 40,
+                        "risk_dollars": 2000,
+                        "risk_percent": 2.5
+                    }
+                },
+                "USDJPY": {
+                    "5000": {
+                        "sl_pips": 130,
+                        "risk_dollars": 58,
+                        "risk_percent": 1.5
+                    },
+                    "10000": {
+                        "sl_pips": 130,
+                        "risk_dollars": 117,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 45,
+                        "risk_dollars": 405,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 38,
+                        "risk_dollars": 855,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 45,
+                        "risk_dollars": 2025,
+                        "risk_percent": 2.5
+                    }
+                },
+                "EURJPY": {
+                    "5000": {
+                        "sl_pips": 80,
+                        "risk_dollars": 38,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 80,
+                        "risk_dollars": 76,
+                        "risk_percent": 1.0
+                    },
+                    "25000": {
+                        "sl_pips": 30,
+                        "risk_dollars": 285,
+                        "risk_percent": 1.5
+                    },
+                    "50000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 831,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 1662,
+                        "risk_percent": 2.0
+                    }
+                },
+                "GBPJPY": {
+                    "5000": {
+                        "sl_pips": 80,
+                        "risk_dollars": 36,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 80,
+                        "risk_dollars": 72,
+                        "risk_percent": 1.0
+                    },
+                    "25000": {
+                        "sl_pips": 30,
+                        "risk_dollars": 270,
+                        "risk_percent": 1.5
+                    },
+                    "50000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 788,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 1575,
+                        "risk_percent": 2.0
+                    }
+                },
+                "AUDJPY": {
+                    "5000": {
+                        "sl_pips": 80,
+                        "risk_dollars": 37,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 80,
+                        "risk_dollars": 74,
+                        "risk_percent": 1.0
+                    },
+                    "25000": {
+                        "sl_pips": 30,
+                        "risk_dollars": 276,
+                        "risk_percent": 1.5
+                    },
+                    "50000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 805,
+                        "risk_percent": 2.0
+                    },
+                    "100000": {
+                        "sl_pips": 35,
+                        "risk_dollars": 1610,
+                        "risk_percent": 2.0
+                    }
+                },
+                "XAUUSD": {
+                    "5000": {
+                        "sl_pips": 500,
+                        "risk_dollars": 25,
+                        "risk_percent": 1.0
+                    },
+                    "10000": {
+                        "sl_pips": 800,
+                        "risk_dollars": 80,
+                        "risk_percent": 1.5
+                    },
+                    "25000": {
+                        "sl_pips": 300,
+                        "risk_dollars": 300,
+                        "risk_percent": 2.0
+                    },
+                    "50000": {
+                        "sl_pips": 300,
+                        "risk_dollars": 750,
+                        "risk_percent": 2.5
+                    },
+                    "100000": {
+                        "sl_pips": 200,
+                        "risk_dollars": 1000,
+                        "risk_percent": 3.0
+                    }
+                }
+            }
+        }
+    },
+    "active_sl_system": "sl-1",
+    "sl_system_enabled": true,
+    "symbol_sl_reductions": {},
+    "account_balance": 10000,
+    "dual_order_config": {
+        "enabled": true
+    },
+    "profit_booking_config": {
+        "enabled": true,
+        "min_profit": 7.0,
+        "allow_partial_progression": false,
+        "partial_success_threshold": 0.75,
+        "base_profit": 10,
+        "max_level": 4,
+        "enabled_levels": {
+            "0": true,
+            "1": true,
+            "2": true,
+            "3": false,
+            "4": false
+        },
+        "multipliers": [
+            1,
+            2,
+            4,
+            8,
+            16
+        ],
+        "profit_targets": [
+            10,
+            20,
+            40,
+            80,
+            160
+        ],
+        "sl_reductions": [
+            0,
+            10,
+            25,
+            40,
+            50
+        ],
+        "sl_system": "SL-2.1",
+        "sl_1_1_settings": {
+            "LOGIC1": 20.0,
+            "LOGIC2": 40.0,
+            "LOGIC3": 50.0
+        },
+        "sl_2_1_settings": {
+            "fixed_sl": 10.0
+        },
+        "sl_enabled": true,
+        "sl_hunt_enabled": true
+    },
+    "fine_tune_settings": {
+        "profit_protection": {
+            "enabled": true,
+            "current_mode": "BALANCED",
+            "modes": {
+                "AGGRESSIVE": {
+                    "multiplier": 3.5,
+                    "min_profit_threshold": 15.0,
+                    "description": "Frequent recoveries, higher risk",
+                    "emoji": "⚡"
+                },
+                "BALANCED": {
+                    "multiplier": 6.0,
+                    "min_profit_threshold": 20.0,
+                    "description": "Recommended for most traders",
+                    "emoji": "⚖️"
+                },
+                "CONSERVATIVE": {
+                    "multiplier": 9.0,
+                    "min_profit_threshold": 30.0,
+                    "description": "Protect profits first",
+                    "emoji": "🛡️"
+                },
+                "VERY_CONSERVATIVE": {
+                    "multiplier": 15.0,
+                    "min_profit_threshold": 50.0,
+                    "description": "Rare recoveries, maximum safety",
+                    "emoji": "🔒"
+                }
+            },
+            "apply_to_order_a": true,
+            "apply_to_order_b": true
+        },
+        "sl_reduction_optimization": {
+            "enabled": true,
+            "current_strategy": "BALANCED",
+            "strategies": {
+                "AGGRESSIVE": {
+                    "reduction_percent": 40,
+                    "description": "Tight stops, trending markets",
+                    "emoji": "⚡",
+                    "best_for": "Strong momentum, clear trends"
+                },
+                "BALANCED": {
+                    "reduction_percent": 30,
+                    "description": "Recommended for most conditions",
+                    "emoji": "⚖️",
+                    "best_for": "Mixed market conditions"
+                },
+                "CONSERVATIVE": {
+                    "reduction_percent": 20,
+                    "description": "Wide stops, choppy markets",
+                    "emoji": "🛡️",
+                    "best_for": "Ranging, uncertain conditions"
+                },
+                "ADAPTIVE": {
+                    "description": "Symbol-specific optimization",
+                    "emoji": "🎯",
+                    "best_for": "Optimized for each symbol's characteristics",
+                    "symbol_settings": {
+                        "XAUUSD": {
+                            "reduction_percent": 35,
+                            "reason": "Gold volatile but trending"
+                        },
+                        "EURUSD": {
+                            "reduction_percent": 25,
+                            "reason": "Forex stable, needs room"
+                        },
+                        "GBPJPY": {
+                            "reduction_percent": 38,
+                            "reason": "High volatility pair"
+                        },
+                        "BTCUSD": {
+                            "reduction_percent": 40,
+                            "reason": "Crypto fast moves"
+                        },
+                        "USDJPY": {
+                            "reduction_percent": 22,
+                            "reason": "Stable major pair"
+                        },
+                        "AUDUSD": {
+                            "reduction_percent": 28,
+                            "reason": "Commodity currency"
+                        },
+                        "NZDUSD": {
+                            "reduction_percent": 28,
+                            "reason": "Similar to AUD"
+                        },
+                        "USDCAD": {
+                            "reduction_percent": 26,
+                            "reason": "Oil-correlated"
+                        },
+                        "XAGUSD": {
+                            "reduction_percent": 36,
+                            "reason": "Silver volatile"
+                        },
+                        "GBPUSD": {
+                            "reduction_percent": 32,
+                            "reason": "Cable active"
+                        },
+                        "EURGBP": {
+                            "reduction_percent": 27,
+                            "reason": "EUR cross stable"
+                        },
+                        "EURJPY": {
+                            "reduction_percent": 30,
+                            "reason": "EUR cross moderate"
+                        },
+                        "AUDJPY": {
+                            "reduction_percent": 33,
+                            "reason": "Volatile commodity pair"
+                        },
+                        "NZDJPY": {
+                            "reduction_percent": 33,
+                            "reason": "Similar to AUDJPY"
+                        },
+                        "USDCHF": {
+                            "reduction_percent": 24,
+                            "reason": "Swissy stable"
+                        },
+                        "EURCHF": {
+                            "reduction_percent": 22,
+                            "reason": "Very stable pair"
+                        },
+                        "GBPAUD": {
+                            "reduction_percent": 31,
+                            "reason": "Moderate cross"
+                        },
+                        "GBPNZD": {
+                            "reduction_percent": 31,
+                            "reason": "Moderate cross"
+                        },
+                        "AUDCAD": {
+                            "reduction_percent": 27,
+                            "reason": "Lower volatility"
+                        },
+                        "AUDNZD": {
+                            "reduction_percent": 23,
+                            "reason": "Range-bound"
+                        }
+                    },
+                    "default_percent": 30
+                }
+            }
+        },
+        "recovery_monitoring": {
+            "enabled": true,
+            "check_interval_seconds": 1,
+            "min_sl_pips": 10
+        }
+    },
+    "default_risk_tier": "10000",
+    "profit_protection.current_mode": "BALANCED",
+    "sl_reduction_optimization.current_strategy": "ADAPTIVE",
+    "reverse_shield_config": {
+        "enabled": true
+    }
+}

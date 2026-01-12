@@ -1,0 +1,141 @@
+# BotFather Commands List - Copy & Paste This to BotFather
+
+## HOW TO SET COMMANDS IN TELEGRAM:
+
+1. Open Telegram and search for @BotFather
+2. Send /setcommands to BotFather
+3. Select your bot (ShivamAlgoBot)
+4. Copy the ENTIRE text below (from "start" to "reset_health")
+5. Paste it to BotFather
+6. BotFather will confirm: "Success! Command list updated."
+
+---
+
+## COPY EVERYTHING BELOW THIS LINE:
+
+start - 🏠 Main Menu & Dashboard
+status - 📊 Bot Status
+pause - ⏸️ Pause Trading
+resume - ▶️ Resume Trading
+trades - 📝 Active Trades
+signal_status - 🎯 Signal Status
+simulation_mode - 🧪 Simulation Mode Control
+
+performance - 📈 Performance Summary
+stats - 📊 Trading Statistics
+performance_report - 📄 Detailed Performance
+pair_report - 💱 Symbol-wise Report
+strategy_report - 🎯 Logic-wise Report
+chains - 🔗 Trade Chain Status
+
+logic_status - ⚙️ Logic Status
+logic1_on - ✅ Enable Logic 1
+logic1_off - ❌ Disable Logic 1
+logic2_on - ✅ Enable Logic 2
+logic2_off - ❌ Disable Logic 2
+logic3_on - ✅ Enable Logic 3
+logic3_off - ❌ Disable Logic 3
+
+tp_system - 🎯 TP System Control
+sl_hunt - 🛡️ SL Hunt Protection
+exit_continuation - 🔄 Exit Continuation
+tp_report - 📊 TP Report
+reentry_config - ⚙️ Re-entry Config
+set_monitor_interval - ⏱️ Monitor Interval
+set_sl_offset - 📏 SL Offset
+set_cooldown - ⏰ Cooldown Period
+set_recovery_time - 🕐 Recovery Time
+set_max_levels - 📊 Max Re-entry Levels
+set_sl_reduction - 📉 SL Reduction %
+reset_reentry_config - 🔄 Reset Re-entry Config
+
+show_trends - 📈 Show All Trends
+trend_matrix - 📊 Trend Matrix
+set_trend - ✏️ Set Symbol Trend
+set_auto - 🤖 Auto Trend Detection
+trend_mode - 🔄 Trend Mode
+
+view_risk_caps - 💰 View Risk Caps
+set_daily_cap - 📅 Set Daily Loss Cap
+set_lifetime_cap - 🔒 Set Lifetime Cap
+set_risk_tier - 💼 Set Risk Tier
+clear_loss_data - 🗑️ Clear Loss Data
+clear_daily_loss - 📅 Clear Daily Loss
+lot_size_status - 📦 Lot Size Status
+set_lot_size - ⚖️ Set Lot Size
+
+sl_status - 🛡️ SL System Status
+sl_system_change - 🔄 Change SL System
+sl_system_on - ✅ Enable SL System
+complete_sl_system_off - ❌ Disable All SL
+view_sl_config - ⚙️ View SL Config
+set_symbol_sl - 📝 Set Symbol SL
+reset_symbol_sl - 🔄 Reset Symbol SL
+reset_all_sl - 🔄 Reset All SL
+
+dual_order_status - 🔀 Dual Order Status
+toggle_dual_orders - 🔀 Toggle Dual Orders
+
+profit_status - 💰 Profit Booking Status
+profit_stats - 📊 Profit Statistics
+toggle_profit_booking - 🔄 Toggle Profit Booking
+set_profit_targets - 🎯 Set Profit Targets
+profit_chains - 🔗 Profit Chains
+stop_profit_chain - ⏹️ Stop Profit Chain
+stop_all_profit_chains - ⏹️ Stop All Chains
+set_chain_multipliers - 📊 Chain Multipliers
+profit_config - ⚙️ Profit Config
+profit_sl_status - 🛡️ Profit SL Status
+profit_sl_mode - 🔄 Profit SL Mode
+enable_profit_sl - ✅ Enable Profit SL
+disable_profit_sl - ❌ Disable Profit SL
+set_profit_sl - 📝 Set Profit SL
+reset_profit_sl - 🔄 Reset Profit SL
+
+dashboard - 📊 Live Dashboard
+
+health_status - 🏥 System Health Check
+set_log_level - 📝 Set Log Level
+error_stats - 📊 Error Statistics
+reset_errors - 🔄 Reset Error Counters
+reset_health - 🔄 Reset Health Metrics
+
+---
+
+## AFTER SETTING COMMANDS:
+
+1. Go to your Telegram bot chat
+2. Type "/" and you will see ALL 78 COMMANDS in the menu!
+3. Click on any command to use it
+
+## VERIFICATION:
+
+After setting commands in BotFather:
+1. Open your bot chat
+2. Type "/" (slash)
+3. You should see a menu with ALL 78 commands
+4. The 5 new diagnostic commands should appear at the bottom:
+   - /health_status
+   - /set_log_level
+   - /error_stats
+   - /reset_errors
+   - /reset_health
+
+## IMPORTANT NOTES:
+
+- BotFather has a limit of 100 commands (we have 78, so we're safe)
+- Commands are sorted alphabetically in Telegram menu
+- Emojis in descriptions help identify commands quickly
+- You can change descriptions anytime by running /setcommands again
+
+## TROUBLESHOOTING:
+
+If commands don't show up:
+1. Make sure you selected the correct bot in BotFather
+2. Wait 1-2 minutes for Telegram cache to update
+3. Force close and reopen Telegram app
+4. Try sending /start to your bot to refresh
+
+---
+
+✅ Total Commands: 78 (73 Original + 5 New Diagnostic)

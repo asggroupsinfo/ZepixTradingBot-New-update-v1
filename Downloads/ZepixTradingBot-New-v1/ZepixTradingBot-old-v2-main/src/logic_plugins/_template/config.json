@@ -1,0 +1,24 @@
+{
+  "plugin_id": "_template",
+  "enabled": false,
+  "description": "Template plugin - copy to create new plugins",
+  "version": "1.0.0",
+  "author": "Zepix Team",
+  
+  "database": {
+    "path": "data/zepix_template.db",
+    "backup_enabled": true
+  },
+  
+  "trading_settings": {
+    "max_concurrent_trades": 3,
+    "risk_per_trade": 0.01,
+    "enabled_symbols": ["XAUUSD", "EURUSD"]
+  },
+  
+  "notification_settings": {
+    "send_entry_alerts": true,
+    "send_exit_alerts": true,
+    "telegram_tag": "[TEMPLATE]"
+  }
+}

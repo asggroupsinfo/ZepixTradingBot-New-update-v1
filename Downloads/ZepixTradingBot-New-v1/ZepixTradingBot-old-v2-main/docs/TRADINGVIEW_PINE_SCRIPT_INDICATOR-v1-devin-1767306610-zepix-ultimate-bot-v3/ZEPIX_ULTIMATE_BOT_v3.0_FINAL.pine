@@ -1,0 +1,1933 @@
+// ============================================
+// ZEPIX ULTIMATE BOT v3.0 (Hybrid Intelligence)
+// ============================================
+// This Pine Script combines Smart Money Concepts, Consensus Engine,
+// Breakout Detection, Risk Management, and Conflict Resolution
+// into a unified trading system with 10 specific signals.
+//
+// Licensed by Zepix - Mozilla Public License 2.0
+// https://mozilla.org/MPL/2.0/
+//
+//@version=6
+indicator(title="ZEPIX ULTIMATE BOT v3.0", 
+     shorttitle="ZEPIX v3.0",
+     overlay=true, 
+     max_bars_back=5000, 
+     max_lines_count=300, 
+     max_labels_count=300, 
+     max_boxes_count=300,
+     max_polylines_count=100)
+
+// ============================================
+// SECTION 1: VERSION & GLOBAL CONSTANTS
+// ============================================
+string VERSION = "3.0"
+string AUTHOR = "Zepix"
+
+// Weight Constants for 5-Layer Architecture
+float WEIGHT_SMC = 0.40        // Smart Money Structure (40%)
+float WEIGHT_CONSENSUS = 0.25  // Consensus Engine (25%)
+float WEIGHT_BREAKOUT = 0.20   // Breakout System (20%)
+float WEIGHT_RISK = 0.10       // Risk Management (10%)
+float WEIGHT_CONFLICT = 0.05   // Conflict Resolution (5%)
+
+// Memory Management Constants
+int MAX_OB_ARRAY = 50          // Max Order Blocks to store
+int MAX_FVG_ARRAY = 20         // Max FVGs to store
+int MAX_TRENDLINE_ARRAY = 10   // Max Trendlines to store
+int MAX_SIGNAL_ARRAY = 100     // Max Signals to store
+int CLEANUP_INTERVAL = 100     // Cleanup every N bars
+int CALCULATION_WINDOW = 2000  // Historical calculation limit
+
+// ============================================
+// SECTION 2: INPUT PARAMETERS
+// ============================================
+
+// --- Main Settings Group ---
+string GRP_MAIN = "MAIN SETTINGS"
+bool showSignals = input.bool(true, "Show Trading Signals", group=GRP_MAIN, tooltip="Enable/disable all trading signals on chart")
+bool showAlerts = input.bool(true, "Enable Alerts", group=GRP_MAIN, tooltip="Enable real-time alert notifications")
+bool showDashboard = input.bool(true, "Show Dashboard", group=GRP_MAIN, tooltip="Display confluence score and status table")
+
+// --- Smart Money Settings Group ---
+string GRP_SMC = "SMART MONEY CONCEPTS (40%)"
+bool smcEnabled = input.bool(true, "Enable SMC Module", group=GRP_SMC)
+bool showSwing = input.bool(true, "Show Swing Structure", group=GRP_SMC, tooltip="Display BOS/CHoCH market structure")
+int swingLimit = input.int(100, "Swing Limit", minval=10, maxval=200, group=GRP_SMC, tooltip="Limit swing structure to N bars back")
+int msLen = input.int(5, "Structure Length", minval=2, maxval=20, group=GRP_SMC, tooltip="Market structure detection length")
+string msMode = input.string("Adjusted Points", "Structure Mode", options=["Extreme Points", "Adjusted Points"], group=GRP_SMC)
+bool showOB = input.bool(true, "Show Order Blocks", group=GRP_SMC)
+int obLast = input.int(5, "Show Last N Order Blocks", minval=0, maxval=20, group=GRP_SMC)
+string obMiti = input.string("Close", "OB Mitigation Method", options=["Close", "Wick", "Avg"], group=GRP_SMC)
+bool showFVG = input.bool(true, "Show Fair Value Gaps", group=GRP_SMC)
+int fvgNum = input.int(5, "Show Last N FVGs", minval=0, maxval=20, group=GRP_SMC)
+bool showEHL = input.bool(true, "Show Equal H/L (Liquidity)", group=GRP_SMC)
+string ehlMode = input.string("Short-Term", "EHL Mode", options=["Short-Term", "Mid-Term", "Long-Term"], group=GRP_SMC)
+bool showLiqPrints = input.bool(true, "Show Liquidity Prints", group=GRP_SMC)
+bool buildSweep = input.bool(true, "Build Sweep (x)", group=GRP_SMC, tooltip="Build sweep on market structure")
+
+// --- Consensus Engine Settings Group ---
+string GRP_CONSENSUS = "CONSENSUS ENGINE (25%)"
+bool consensusEnabled = input.bool(true, "Enable Consensus Module", group=GRP_CONSENSUS)
+int signalSensitivity = input.int(50, "Signal Sensitivity", minval=10, maxval=100, group=GRP_CONSENSUS, tooltip="Adjust signal sensitivity")
+float bandMult = input.float(1.0, "Band Multiplier", step=0.2, minval=0.2, maxval=3.0, group=GRP_CONSENSUS)
+bool showTrendCatcher = input.bool(true, "Show Trend Catcher", group=GRP_CONSENSUS)
+bool showExitSignals = input.bool(true, "Show Exit Signals", group=GRP_CONSENSUS)
+float exitLength = input.float(15, "Exit Length (Bars)", step=2, minval=5, maxval=50, group=GRP_CONSENSUS)
+bool showVolumeTable = input.bool(true, "Show Volume Data Table", group=GRP_CONSENSUS)
+bool showTimeframeTable = input.bool(true, "Show Timeframe Table", group=GRP_CONSENSUS)
+
+// --- Consensus Indicators Toggle ---
+string GRP_INDICATORS = "CONSENSUS INDICATORS"
+bool macdOn = input.bool(true, "MACD", group=GRP_INDICATORS)
+bool stochOn = input.bool(true, "Stochastic RSI", group=GRP_INDICATORS)
+bool vortexOn = input.bool(true, "Vortex", group=GRP_INDICATORS)
+bool momOn = input.bool(true, "Momentum", group=GRP_INDICATORS)
+bool rsiOn = input.bool(true, "RSI", group=GRP_INDICATORS)
+bool psarOn = input.bool(true, "PSAR", group=GRP_INDICATORS)
+bool dmiOn = input.bool(true, "DMI", group=GRP_INDICATORS)
+bool mfiOn = input.bool(true, "Money Flow Index", group=GRP_INDICATORS)
+bool fisherOn = input.bool(true, "Fisher Transform", group=GRP_INDICATORS)
+
+// --- Breakout System Settings Group ---
+string GRP_BREAKOUT = "BREAKOUT SYSTEM (20%)"
+bool breakoutEnabled = input.bool(true, "Enable Breakout Module", group=GRP_BREAKOUT)
+int trendPeriod = input.int(10, "Trendline Period", minval=5, maxval=30, group=GRP_BREAKOUT)
+string trendType = input.string("Wicks", "Retest Type", options=["Wicks", "Body"], group=GRP_BREAKOUT)
+string trendSensitivity = input.string("  25", "Sensitivity", options=["  25", "  50", "  75"], group=GRP_BREAKOUT)
+bool showTargets = input.bool(true, "Show Estimated Targets", group=GRP_BREAKOUT)
+int breakoutPeriod = input.int(5, "Breakout Period", minval=2, maxval=20, group=GRP_BREAKOUT)
+int maxBreakoutLen = input.int(200, "Max Breakout Length", minval=30, maxval=300, group=GRP_BREAKOUT)
+int minTests = input.int(2, "Minimum Tests", minval=1, maxval=5, group=GRP_BREAKOUT)
+
+// --- Risk Management Settings Group ---
+string GRP_RISK = "RISK MANAGEMENT (10%)"
+bool riskEnabled = input.bool(true, "Enable Risk Module", group=GRP_RISK)
+float accountCapital = input.float(10000, "Account Capital ($)", minval=1000, step=1000, group=GRP_RISK, tooltip="Your trading account size for position sizing")
+float riskPerTrade = input.float(1.0, "Risk Per Trade (%)", minval=0.1, maxval=5.0, step=0.1, group=GRP_RISK, tooltip="Percentage of account to risk per trade")
+float riskReward1 = input.float(1.5, "Take Profit 1 (R:R)", step=0.5, minval=0.5, maxval=5.0, group=GRP_RISK)
+float riskReward2 = input.float(3.0, "Take Profit 2 (R:R)", step=0.5, minval=1.0, maxval=10.0, group=GRP_RISK)
+float atrMultSL = input.float(1.5, "Stop Loss ATR Multiplier", step=0.1, minval=0.5, maxval=3.0, group=GRP_RISK)
+bool useTrailingStop = input.bool(true, "Use Trailing Stop", group=GRP_RISK)
+float trailATRMult = input.float(2.0, "Trailing Stop ATR Mult", step=0.1, minval=0.5, maxval=5.0, group=GRP_RISK)
+
+// --- Conflict Resolution Settings Group ---
+string GRP_CONFLICT = "CONFLICT RESOLUTION (5%)"
+bool conflictEnabled = input.bool(true, "Enable Conflict Resolution", group=GRP_CONFLICT)
+bool requireMTFAlign = input.bool(true, "Require MTF Alignment", group=GRP_CONFLICT, tooltip="Multi-timeframe alignment required")
+bool requireVolConfirm = input.bool(false, "Require Volume Confirmation", group=GRP_CONFLICT)
+float volumeDeltaThreshold = input.float(1.5, "Volume Delta Threshold", minval=1.0, maxval=3.0, step=0.1, group=GRP_CONFLICT, tooltip="Minimum volume delta ratio for confirmation")
+bool blockEHLTrades = input.bool(true, "Block Trades in EQH/EQL Zones", group=GRP_CONFLICT)
+int minConfluenceScore = input.int(5, "Minimum Confluence Score", minval=1, maxval=9, group=GRP_CONFLICT)
+
+// ADX Threshold for Signal 12 (Sideways Breakout)
+int adxThreshold = input.int(20, "ADX Momentum Threshold (Signal 12)", minval=10, maxval=30, group=GRP_CONFLICT, tooltip="ADX threshold for Signal 12. Lower = more signals (10-15), Higher = fewer but stronger signals (25-30). Default 20 is balanced.")
+
+
+
+
+
+// --- Visual Settings Group ---
+string GRP_VISUAL = "VISUAL SETTINGS"
+color bullColor = input.color(#089981, "Bullish Color", group=GRP_VISUAL)
+color bearColor = input.color(#f23645, "Bearish Color", group=GRP_VISUAL)
+color neutralColor = input.color(#ffbb00, "Neutral/Warning Color", group=GRP_VISUAL)
+bool colorBars = input.bool(true, "Color Candles by Trend", group=GRP_VISUAL)
+string textSize = input.string("Normal", "Text Size", options=["Tiny", "Small", "Normal", "Large"], group=GRP_VISUAL)
+
+// --- Multi-Timeframe Settings ---
+string GRP_MTF = "MULTI-TIMEFRAME SETTINGS"
+string tf0 = input.timeframe("1", "Timeframe 0 (Trend Pulse)", group=GRP_MTF, tooltip="For Trend Pulse monitoring")
+string tf1 = input.timeframe("5", "Timeframe 1", group=GRP_MTF)
+string tf2 = input.timeframe("15", "Timeframe 2", group=GRP_MTF)
+string tf3 = input.timeframe("60", "Timeframe 3", group=GRP_MTF)
+string tf4 = input.timeframe("240", "Timeframe 4", group=GRP_MTF)
+string tf5 = input.timeframe("1D", "Timeframe 5", group=GRP_MTF)
+
+// ============================================
+// SECTION 3: USER DEFINED TYPES (UDT)
+// ============================================
+
+// Order Block Type
+type OrderBlock
+    bool  bull
+    float top
+    float btm
+    float avg
+    int   loc
+    color css
+    float vol
+    int   dir
+    int   move
+    int   blPOS
+    int   brPOS
+    int   xlocbl
+    int   xlocbr
+    bool  isbb = false
+    int   bbloc
+
+// Fair Value Gap Type
+type FairValueGap
+    float top = na
+    float btm = na
+    int   loc = bar_index
+    bool  isbb = false
+    int   bbloc = na
+    bool  active = false
+
+// Market Structure Type
+type MarketStructure
+    int    zn
+    float  zz
+    float  bos
+    float  choch
+    int    loc
+    int    temp
+    int    trend
+    int    start
+    float  main
+    int    xloc
+    bool   upsweep
+    bool   dnsweep
+    string txt = na
+
+// Drawing Storage Type
+type DrawStore
+    line    [] ln
+    label   [] lb
+    box     [] bx
+    linefill[] lf
+
+// Equal High/Low Type
+type EqualHL
+    float pt
+    int   t
+    float pb
+    int   b
+
+// Signal Type
+type TradeSignal
+    string name
+    bool   active
+    int    direction  // 1 = bullish, -1 = bearish, 0 = neutral
+    float  price
+    int    barIdx
+    string reason
+
+// Trade State Type
+type TradeState
+    bool  isActive
+    bool  isLong
+    float entryPrice
+    float stopLoss
+    float takeProfit1
+    float takeProfit2
+    int   entryBar
+
+// ============================================
+// SECTION 4: GLOBAL VARIABLES & ARRAYS
+// ============================================
+
+// Drawing Storage - v6 compliant initialization
+var DrawStore bin = DrawStore.new(array.new_line(), array.new_label(), array.new_box(), array.new_linefill())
+
+// Order Block Arrays
+var array<OrderBlock> bullOBs = array.new<OrderBlock>()
+var array<OrderBlock> bearOBs = array.new<OrderBlock>()
+
+// FVG Arrays
+var array<FairValueGap> bullFVGs = array.new<FairValueGap>()
+var array<FairValueGap> bearFVGs = array.new<FairValueGap>()
+
+// Equal H/L tracking
+var EqualHL ehlData = EqualHL.new(0, 0, 0, 0)
+
+// Trade State
+var TradeState tradeState = TradeState.new(false, false, 0.0, 0.0, 0.0, 0.0, 0)
+
+// Signal Arrays
+var array<TradeSignal> activeSignals = array.new<TradeSignal>()
+
+// Consensus Score Variables
+var int consensusScore = 0
+var int bullishIndicators = 0
+var int bearishIndicators = 0
+
+// Market Structure Variables
+var int marketTrend = 0  // 1 = bullish, -1 = bearish
+var float lastBOS = na
+var float lastCHOCH = na
+
+// Trendline Variables
+var bool tradeIsOn = false
+var bool longTrade = false
+var bool shortTrade = false
+var float tpLevel = 0.0
+var float slLevel = 0.0
+
+// Volume Analysis Variables
+var float upTrendVolume = 0.0
+var float downTrendVolume = 0.0
+
+// Cleanup old drawing objects on last bar
+if barstate.islast
+    for obj in bin.ln
+        obj.delete()
+    for obj in bin.lb
+        obj.delete()
+    for obj in bin.bx
+        obj.delete()
+    for obj in bin.lf
+        obj.delete()
+    bin.ln.clear()
+    bin.lb.clear()
+    bin.bx.clear()
+    bin.lf.clear()
+
+// ============================================
+// SECTION 5: UTILITY FUNCTIONS
+// ============================================
+
+// Data Validation - Check for valid price/volume data
+isValidData = not na(close) and not na(volume) and volume > 0 and close > 0
+
+// Safe Division - Prevent division by zero errors
+safeDiv(float numerator, float denominator) =>
+    denominator != 0 ? numerator / denominator : 0.0
+
+// Text Size Converter
+txSz(string s) =>
+    out = switch s
+        "Tiny"   => size.tiny
+        "Small"  => size.small
+        "Normal" => size.normal
+        "Large"  => size.large
+        => size.normal
+    out
+
+// Line Style Converter
+lstyle(string style) =>
+    out = switch style
+        "Solid"  => line.style_solid
+        "Dashed" => line.style_dashed
+        "Dotted" => line.style_dotted
+        => line.style_solid
+    out
+
+// Volatility Adjusted Band
+volAdj(int len) =>
+    math.min(ta.atr(len) * 0.3, close * (0.3/100))[20] / 2
+
+// Extension Switcher for Trendlines
+extenSwitcher(string ex) =>
+    switch ex 
+        "  25" => 1
+        "  50" => 2
+        => 3
+
+// Get OHLC Data
+getOHLC() => [high[2], low[2], close[1], open[1], close, open, high, low, high[1], low[1], ta.atr(200)]
+
+// Darken Color
+darkenColor(color css, float factor) =>
+    blue  = color.b(css) * (1 - factor)
+    red   = color.r(css) * (1 - factor)
+    green = color.g(css) * (1 - factor)
+    color.rgb(red, green, blue, 0)
+
+// ============================================
+// SECTION 6: SMART MONEY MODULE (40%)
+// ============================================
+
+// --- 6.1 Market Structure Detection ---
+var MarketStructure ms = MarketStructure.new(start=0)
+float atrValue = ta.atr(200)
+float atrScaled = atrValue / (5.0 / float(msLen))
+
+// Pivot Detection for Structure
+float pivotHigh = ta.pivothigh(high, msLen, msLen)
+float pivotLow = ta.pivotlow(low, msLen, msLen)
+
+// Structure Variables
+var float structureUp = na
+var float structureDn = na
+var int structureTrend = 0
+
+if na(structureUp)
+    structureUp := high
+
+if na(structureDn)
+    structureDn := low
+
+bool crossUp = false
+bool crossDn = false
+
+if high > structureUp
+    structureUp := high
+    structureDn := low
+    crossUp := true
+
+if low < structureDn
+    structureUp := high
+    structureDn := low
+    crossDn := true
+
+// BOS/CHoCH Detection
+bool isBOS = false
+bool isCHOCH = false
+bool isBullishStructure = false
+bool isBearishStructure = false
+
+if smcEnabled and bar_index > msLen * 2
+    // Bullish BOS - price breaks above previous swing high
+    if crossUp and close > open and close[1] > open[1]
+        if structureTrend == 1
+            // Continuing bullish trend - this is a BOS
+            isBOS := true
+            lastBOS := high
+        else if structureTrend == -1
+            // Reversing from bearish - this is a CHoCH
+            isCHOCH := true
+            lastCHOCH := high
+            structureTrend := 1
+        else if structureTrend == 0
+            // Initial trend establishment - treat as first bullish structure
+            structureTrend := 1
+            isBOS := true
+            lastBOS := high
+        isBullishStructure := true
+    
+    // Bearish BOS - price breaks below previous swing low
+    if crossDn and close < open and close[1] < open[1]
+        if structureTrend == -1
+            // Continuing bearish trend - this is a BOS
+            isBOS := true
+            lastBOS := low
+        else if structureTrend == 1
+            // Reversing from bullish - this is a CHoCH
+            isCHOCH := true
+            lastCHOCH := low
+            structureTrend := -1
+        else if structureTrend == 0
+            // Initial trend establishment - treat as first bearish structure
+            structureTrend := -1
+            isBOS := true
+            lastBOS := low
+        isBearishStructure := true
+
+// Update market trend
+marketTrend := structureTrend
+
+// --- 6.2 Volumetric Order Block Detection ---
+// Find Order Block formation after structure break
+bool newBullOB = false
+bool newBearOB = false
+float obTop = na
+float obBtm = na
+
+if smcEnabled and showOB
+    // Bullish OB - forms after bullish structure break
+    // Look for last bearish candle before the bullish move
+    if isBullishStructure
+        // Search for last bearish candle in recent bars
+        int lookback = 0
+        // FIX: Drastically increased lookback to 300 to find origin of LONG trends
+        // Screenshot showed trend origin was >100 bars back
+        for i = 1 to 300 
+            if close[i] < open[i]  // Found bearish candle
+                lookback := i
+                break
+        
+        if lookback > 0
+            obTop := high[lookback]
+            obBtm := low[lookback]
+            newBullOB := true
+            
+            // Create new Order Block
+            if bullOBs.size() < MAX_OB_ARRAY
+                bullOBs.unshift(OrderBlock.new(
+                    true,
+                    obTop,
+                    obBtm,
+                    math.avg(obTop, obBtm),
+                    time[lookback],
+                    color.new(bullColor, 80),
+                    volume[lookback],
+                    -1,  // Bearish candle created the OB
+                    1, 1, 1,
+                    time[lookback], time[lookback],
+                    false, na
+                ))
+    
+    // Bearish OB - forms after bearish structure break
+    // Look for last bullish candle before the bearish move
+    if isBearishStructure
+        // Search for last bullish candle in recent bars
+        int lookback = 0
+        for i = 1 to 300  // FIX: Increased lookback to 300
+            if close[i] > open[i]  // Found bullish candle
+                lookback := i
+                break
+        
+        if lookback > 0
+            obTop := high[lookback]
+            obBtm := low[lookback]
+            newBearOB := true
+            
+            if bearOBs.size() < MAX_OB_ARRAY
+                bearOBs.unshift(OrderBlock.new(
+                    false,
+                    obTop,
+                    obBtm,
+                    math.avg(obTop, obBtm),
+                    time[lookback],
+                    color.new(bearColor, 80),
+                    volume[lookback],
+                    1,  // Bullish candle created the OB
+                    1, 1, 1,
+                    time[lookback], time[lookback],
+                    false, na
+                ))
+
+// Order Block Mitigation Check
+// OB Mitigation Check moved to Section 16 to ensure Signals fire BEFORE OB is marked broken
+// This prevents valid retests from being ignored
+
+
+// --- 6.3 Fair Value Gap Detection ---
+bool newBullFVG = false
+bool newBearFVG = false
+float fvgTop = na
+float fvgBtm = na
+
+if smcEnabled and showFVG
+    // Bullish FVG - gap between candle 2 low and current high
+    if low > high[2] and close[1] > low[1]
+        fvgTop := low
+        fvgBtm := high[2]
+        newBullFVG := true
+        
+        if bullFVGs.size() < MAX_FVG_ARRAY
+            bullFVGs.unshift(FairValueGap.new(
+                fvgTop,
+                fvgBtm,
+                time[1],
+                false, na, false
+            ))
+    
+    // Bearish FVG - gap between candle 2 high and current low
+    if high < low[2] and close[1] < high[1]
+        fvgTop := low[2]
+        fvgBtm := high
+        newBearFVG := true
+        
+        if bearFVGs.size() < MAX_FVG_ARRAY
+            bearFVGs.unshift(FairValueGap.new(
+                fvgTop,
+                fvgBtm,
+                time[1],
+                false, na, false
+            ))
+
+// FVG Mitigation Check
+// FVG Mitigation Check moved to Section 16 to ensure Signals fire BEFORE FVG is marked broken
+
+
+// --- 6.4 Equal High/Low (Liquidity Zones) Detection ---
+bool isEQH = false
+bool isEQL = false
+float eqhLevel = na
+float eqlLevel = na
+
+if smcEnabled and showEHL
+    int pos = 2
+    float thresh = 0.1
+    
+    switch ehlMode
+        "Short-Term" => pos := 2, thresh := 0.1
+        "Mid-Term"   => pos := 6, thresh := 0.25
+        "Long-Term"  => pos := 10, thresh := 0.5
+    
+    float phEHL = ta.pivothigh(high, pos, pos)
+    float plEHL = ta.pivotlow(low, pos, pos)
+    
+    // Check for Equal Highs
+    if not na(phEHL)
+        mx = math.max(phEHL, ehlData.pt)
+        mn = math.min(phEHL, ehlData.pt)
+        if mx < mn + atrValue * thresh
+            isEQH := true
+            eqhLevel := phEHL
+        ehlData.pt := phEHL
+        ehlData.t := bar_index - pos
+    
+    // Check for Equal Lows
+    if not na(plEHL)
+        mx = math.max(plEHL, ehlData.pb)
+        mn = math.min(plEHL, ehlData.pb)
+        if mn > mx - atrValue * thresh
+            isEQL := true
+            eqlLevel := plEHL
+        ehlData.pb := plEHL
+        ehlData.b := bar_index - pos
+
+// --- 6.5 Liquidity Sweep Detection ---
+bool bullSweep = false
+bool bearSweep = false
+
+if smcEnabled and buildSweep
+    // Bullish sweep - price goes below low then closes above
+    if low < low[1] and close > low[1]
+        bullSweep := true
+    
+    // Bearish sweep - price goes above high then closes below
+    if high > high[1] and close < high[1]
+        bearSweep := true
+
+// --- 6.6 Price in Order Block Check ---
+// Strict check for signals (unbroken OBs only)
+bool priceInBullOB = false
+bool priceInBearOB = false
+
+if smcEnabled and bullOBs.size() > 0
+    for i = 0 to bullOBs.size() - 1
+        ob = bullOBs.get(i)
+        // Check if price is inside OB range and NOT mitigated/broken
+        if not ob.isbb and low <= ob.top and high >= ob.btm
+            priceInBullOB := true
+            break // Found one, exit loop
+
+if smcEnabled and bearOBs.size() > 0
+    for i = 0 to bearOBs.size() - 1
+        ob = bearOBs.get(i)
+        if not ob.isbb and high >= ob.btm and low <= ob.top
+            priceInBearOB := true
+            break
+
+// Relaxed check for dashboard display (any OB, broken or not)
+bool priceInAnyBullOB = false
+bool priceInAnyBearOB = false
+
+if smcEnabled and bullOBs.size() > 0
+    for i = 0 to bullOBs.size() - 1
+        ob = bullOBs.get(i)
+        // Check even if broken - for dashboard context
+        if low <= ob.top and high >= ob.btm
+            priceInAnyBullOB := true
+            break
+
+if smcEnabled and bearOBs.size() > 0
+    for i = 0 to bearOBs.size() - 1
+        ob = bearOBs.get(i)
+        // Check even if broken - for dashboard context
+        if high >= ob.btm and low <= ob.top
+            priceInAnyBearOB := true
+            break
+
+// ============================================
+// SECTION 7: CONSENSUS ENGINE MODULE (25%)
+// ============================================
+
+// --- 7.1 ZLEMA + VIDYA Hybrid Calculation ---
+int lag = math.floor((signalSensitivity - 1) / 2)
+float zlema = ta.ema(close + (close - close[lag]), signalSensitivity)
+float volatility = ta.highest(ta.atr(signalSensitivity), signalSensitivity * 3) * bandMult
+
+// VIDYA Calculation
+vidyaCalc(float src, int vidyaLen, int vidyaMom) =>
+    float momentum = ta.change(src)
+    float sumPosMom = math.sum((momentum >= 0) ? momentum : 0.0, vidyaMom)
+    float sumNegMom = math.sum((momentum >= 0) ? 0.0 : -momentum, vidyaMom)
+    float absCMO = math.abs(100 * (sumPosMom - sumNegMom) / (sumPosMom + sumNegMom))
+    float alpha = 2 / (vidyaLen + 1)
+    var float vidyaVal = 0.0
+    vidyaVal := alpha * absCMO / 100 * src + (1 - alpha * absCMO / 100) * nz(vidyaVal[1])
+    ta.sma(vidyaVal, 15)
+
+float vidya = vidyaCalc(close, 1, 10)
+float upperBand = vidya + atrValue * 1.0
+float lowerBand = vidya - atrValue * 1.0
+
+// Trend Detection
+var int zlTrend = 0
+if ta.crossover(close, zlema + volatility)
+    zlTrend := 1
+if ta.crossunder(close, zlema - volatility)
+    zlTrend := -1
+
+// VIDYA Trend
+var bool vidyaTrendUp = false
+if ta.crossover(close, upperBand)
+    vidyaTrendUp := true
+if ta.crossunder(close, lowerBand)
+    vidyaTrendUp := false
+
+// --- 7.2 Nine-Indicator Voting System ---
+// Category 1: Momentum Indicators (Weight = 2)
+// MACD
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+bool macdBullish = macdLine > signalLine
+bool macdBearish = macdLine < signalLine
+
+// Momentum
+float mom = ta.mom(close, 14)
+bool momBullish = mom > mom[1]
+bool momBearish = mom < mom[1]
+
+// RSI
+float rsi = ta.rsi(close, 14)
+bool rsiBullish = rsi > rsi[1]
+bool rsiBearish = rsi < rsi[1]
+
+// Category 2: Trend Indicators (Weight = 1)
+// Stochastic RSI
+float rsi1 = ta.rsi(close, 14)
+float stochK = ta.sma(ta.stoch(rsi1, rsi1, rsi1, 14), 3)
+float stochD = ta.sma(stochK, 3)
+bool stochBullish = stochK > stochD
+bool stochBearish = stochK < stochD
+
+// Vortex
+float VMP = math.sum(math.abs(high - low[1]), 14)
+float VMM = math.sum(math.abs(low - high[1]), 14)
+float STR = math.sum(ta.atr(1), 14)
+float VIP = VMP / STR
+float VIM = VMM / STR
+bool vortexBullish = VIP > VIM
+bool vortexBearish = VIP < VIM
+
+// DMI
+[diplus, diminus, adx] = ta.dmi(14, 14)
+bool dmiBullish = diplus > diminus
+bool dmiBearish = diplus < diminus
+
+// Category 3: Volume/Oscillator Indicators (Weight = 1)
+// PSAR
+float psar = ta.sar(0.02, 0.02, 0.2)
+bool psarBullish = close > psar
+bool psarBearish = close < psar
+
+// Money Flow Index
+float mfi = ta.mfi(close, 14)
+bool mfiBullish = mfi > mfi[1]
+bool mfiBearish = mfi < mfi[1]
+
+// Fisher Transform
+float high_ = ta.highest(hl2, 14)
+float low_ = ta.lowest(hl2, 14)
+roundVal(float val) => val > 0.99 ? 0.999 : val < -0.99 ? -0.999 : val
+var float fisherValue = 0.0
+fisherValue := roundVal(0.66 * (safeDiv(hl2 - low_, high_ - low_) - 0.5) + 0.67 * nz(fisherValue[1]))
+var float fish1 = 0.0
+fish1 := 0.5 * math.log((1 + fisherValue) / (1 - fisherValue)) + 0.5 * nz(fish1[1])
+float fish2 = fish1[1]
+bool fisherBullish = fish1 > fish2
+bool fisherBearish = fish1 < fish2
+
+// --- 7.3 Calculate Consensus Score ---
+// Momentum indicators get weight of 2, others get weight of 1
+int bullScore = 0
+int bearScore = 0
+
+if consensusEnabled
+    // Momentum Category (Weight = 2)
+    if macdOn
+        bullScore += macdBullish ? 2 : 0
+        bearScore += macdBearish ? 2 : 0
+    if momOn
+        bullScore += momBullish ? 2 : 0
+        bearScore += momBearish ? 2 : 0
+    if rsiOn
+        bullScore += rsiBullish ? 2 : 0
+        bearScore += rsiBearish ? 2 : 0
+    
+    // Trend Category (Weight = 1)
+    if stochOn
+        bullScore += stochBullish ? 1 : 0
+        bearScore += stochBearish ? 1 : 0
+    if vortexOn
+        bullScore += vortexBullish ? 1 : 0
+        bearScore += vortexBearish ? 1 : 0
+    if dmiOn
+        bullScore += dmiBullish ? 1 : 0
+        bearScore += dmiBearish ? 1 : 0
+    
+    // Volume/Oscillator Category (Weight = 1)
+    if psarOn
+        bullScore += psarBullish ? 1 : 0
+        bearScore += psarBearish ? 1 : 0
+    if mfiOn
+        bullScore += mfiBullish ? 1 : 0
+        bearScore += mfiBearish ? 1 : 0
+    if fisherOn
+        bullScore += fisherBullish ? 1 : 0
+        bearScore += fisherBearish ? 1 : 0
+
+// Normalize to 0-9 scale (max possible = 12 with weights)
+consensusScore := math.round(bullScore * 9 / 12)
+bullishIndicators := bullScore
+bearishIndicators := bearScore
+
+// --- 7.4 Volume Delta Analysis ---
+bool trendCrossUp = not vidyaTrendUp[1] and vidyaTrendUp
+bool trendCrossDown = not vidyaTrendUp and vidyaTrendUp[1]
+
+// v6 fix: Use direct boolean check instead of ta.change() on booleans
+bool trendReset = trendCrossUp or trendCrossDown
+
+if trendReset
+    upTrendVolume := 0
+    downTrendVolume := 0
+
+if not trendReset
+    upTrendVolume += (close > open ? volume : 0)
+    downTrendVolume += (close < open ? volume : 0)
+
+float avgVolumeDelta = (upTrendVolume + downTrendVolume) / 2
+// FIX: Add minimum volume threshold to avoid false zeros after trend resets
+float minVolumeForDelta = ta.sma(volume, 20) * 0.5  // Require at least 50% of average volume
+float volumeDeltaRatio = 0.0
+if avgVolumeDelta > minVolumeForDelta
+    volumeDeltaRatio := (upTrendVolume - downTrendVolume) / avgVolumeDelta
+
+// ============================================
+// SECTION 8: BREAKOUT SYSTEM MODULE (20%)
+// ============================================
+
+// --- 8.1 Adaptive Trendline Detection ---
+int barTime = time - time[1]
+float zband = volAdj(30)
+
+// Trendline Method
+trendlineCalc(float src, int timeIndex, bool dir) =>
+    var int tStart = 1
+    var int tEnd = 0
+    var int tTime = 1
+    var float yEnd = 0
+    var float yStart = 0
+    var float slope = 0
+    
+    srcFixed = fixnan(src)
+    if ta.change(srcFixed) != 0
+        tTime := time[timeIndex]
+        yStart := srcFixed[1]
+        tStart := tTime[1]
+        slope := (srcFixed - yStart) / (tTime - tStart)
+    
+    exTime = extenSwitcher(trendSensitivity) * barTime * 25
+    tEnd := tTime + exTime
+    yEnd := srcFixed + exTime * slope
+    
+    [tStart, yStart, slope]
+
+// Pivot Points for Trendlines
+bool useTrendWicks = trendType == "Wicks"
+float trendPH = ta.pivothigh(useTrendWicks ? high : close > open ? close : open, trendPeriod, trendPeriod / 2)
+float trendPL = ta.pivotlow(useTrendWicks ? low : close > open ? open : close, trendPeriod, trendPeriod / 2)
+
+[trendXH, trendYH, trendSlopeH] = trendlineCalc(trendPH, trendPeriod / 2, false)
+[trendXL, trendYL, trendSlopeL] = trendlineCalc(trendPL, trendPeriod / 2, true)
+
+// Updated Trendline Values
+var int updatedX = 0
+var float updatedY = 0.0
+var float updatedSlope = 0.0
+var int updatedXLow = 0
+var float updatedYLow = 0.0
+var float updatedSlopeLow = 0.0
+
+if ta.change(fixnan(trendPH)) != 0
+    updatedX := trendXH
+    updatedY := trendYH
+    updatedSlope := trendSlopeH
+
+if ta.change(fixnan(trendPL)) != 0
+    updatedXLow := trendXL
+    updatedYLow := trendYL
+    updatedSlopeLow := trendSlopeL
+
+// Get Line Price at Current Time
+getLinePrice(int startTime, float startPrice, float slp, int lookBack) =>
+    esTime = time - startTime
+    startPrice + (esTime - lookBack * barTime) * slp
+
+// Check Trendline Cross
+checkTrendCross(float price, int startTime, float startPrice, float slp) =>
+    var float current = 0.0
+    var float previous = 0.0
+    int crossover = 0
+    if startPrice[trendPeriod] != startPrice
+        current := getLinePrice(startTime, startPrice, slp, 0)
+        previous := getLinePrice(startTime, startPrice, slp, 1)
+        if price[1] < previous and price > current
+            crossover := 1
+        else if price[1] > previous - (zband * 0.1) and price < current - (zband * 0.1)
+            crossover := -1
+    crossover
+
+// Breakout Detection
+// v6 fix: Cache function results before using in conditions
+int crossResultLong = checkTrendCross(close, updatedX, updatedY, updatedSlope)
+int crossResultShort = checkTrendCross(close, updatedXLow, updatedYLow, updatedSlopeLow)
+
+bool trendLongBreak = (not (updatedSlope * time > 0) and crossResultLong == 1 and not tradeIsOn)
+
+bool trendShortBreak = (not (updatedSlopeLow * time < 0) and crossResultShort == -1 and not tradeIsOn)
+
+// --- 8.2 Breakout Pattern Detection (Cup & Handle, etc.) ---
+// Breakout arrays
+var float[] phval = array.new_float(0)
+var int[] phloc = array.new_int(0)
+var float[] plval = array.new_float(0)
+var int[] plloc = array.new_int(0)
+
+// Channel width calculation
+int lll = math.max(math.min(bar_index, 300), 1)
+float h_ = ta.highest(lll)
+float l_ = ta.lowest(lll)
+float chwidth = (h_ - l_) * 0.04
+
+// Pivot detection for breakouts
+float boPH = ta.pivothigh(breakoutPeriod, breakoutPeriod)
+float boPL = ta.pivotlow(breakoutPeriod, breakoutPeriod)
+
+// Store pivot highs
+if not na(boPH)
+    array.unshift(phval, boPH)
+    array.unshift(phloc, bar_index - breakoutPeriod)
+    if array.size(phval) > 1
+        for x = array.size(phloc) - 1 to 1
+            if bar_index - array.get(phloc, x) > maxBreakoutLen
+                array.pop(phloc)
+                array.pop(phval)
+
+// Store pivot lows
+if not na(boPL)
+    array.unshift(plval, boPL)
+    array.unshift(plloc, bar_index - breakoutPeriod)
+    if array.size(plval) > 1
+        for x = array.size(plloc) - 1 to 1
+            if bar_index - array.get(plloc, x) > maxBreakoutLen
+                array.pop(plloc)
+                array.pop(plval)
+
+// Bullish Breakout Detection
+float bomax = na
+int bostart = bar_index
+int num = 0
+float hgst = ta.highest(breakoutPeriod)[1]
+
+if breakoutEnabled and array.size(phval) >= minTests and close > open and close > hgst
+    bomax := array.get(phval, 0)
+    xx = 0
+    for x = 0 to array.size(phval) - 1
+        if array.get(phval, x) >= close
+            break
+        xx := x
+        bomax := math.max(bomax, array.get(phval, x))
+    
+    if xx >= minTests and open <= bomax
+        for x = 0 to xx
+            if array.get(phval, x) <= bomax and array.get(phval, x) >= bomax - chwidth
+                num += 1
+                bostart := array.get(phloc, x)
+        if num < minTests or hgst >= bomax
+            bomax := na
+
+bool bullishBreakout = not na(bomax) and num >= minTests
+
+// Bearish Breakdown Detection
+float bomin = na
+int bostart2 = bar_index
+int num1 = 0
+float lwst = ta.lowest(breakoutPeriod)[1]
+
+if breakoutEnabled and array.size(plval) >= minTests and close < open and close < lwst
+    bomin := array.get(plval, 0)
+    xx = 0
+    for x = 0 to array.size(plval) - 1
+        if array.get(plval, x) <= close
+            break
+        xx := x
+        bomin := math.min(bomin, array.get(plval, x))
+    
+    if xx >= minTests and open >= bomin
+        for x = 0 to xx
+            if array.get(plval, x) >= bomin and array.get(plval, x) <= bomin + chwidth
+                num1 += 1
+                bostart2 := array.get(plloc, x)
+        if num1 < minTests or lwst <= bomin
+            bomin := na
+
+bool bearishBreakdown = not na(bomin) and num1 >= minTests
+
+// --- 8.3 Volatility Squeeze Detection ---
+// v6 fix: Cache ta.atr() and other function calls outside condition
+float atr14 = ta.atr(14)
+float smaVol20 = ta.sma(volume, 20)
+float highest20 = ta.highest(high, 20)
+float lowest20 = ta.lowest(low, 20)
+
+bool volatilitySqueeze = (atr14 < atr14[1] * 0.7 and atr14[1] < atr14[2] * 0.7 and volume < smaVol20 * 0.5 and highest20 - lowest20 < atr14 * 2.0)
+
+// ============================================
+// SECTION 9: RISK MANAGEMENT MODULE (10%)
+// ============================================
+
+// --- 9.1 Dynamic Position Sizing ---
+// Position multiplier based on confluence score (blueprint requirement)
+// v6 fix: Convert multi-line ternary to if-else
+float positionMultiplier = 0.2
+if consensusScore >= 9
+    positionMultiplier := 1.0
+else if consensusScore >= 7
+    positionMultiplier := 0.8
+else if consensusScore >= 5
+    positionMultiplier := 0.6
+else if consensusScore >= 3
+    positionMultiplier := 0.4
+
+// --- 9.2 Smart Stop Loss Calculation ---
+float atrSL = atrValue * atrMultSL
+
+// Stop loss based on Order Block distal or ATR
+float smartStopLong = na
+float smartStopShort = na
+
+if bullOBs.size() > 0
+    smartStopLong := close - atrSL // Default fallback
+    for i = 0 to bullOBs.size() - 1
+        ob = bullOBs.get(i)
+        // Find the OB we are currently interacting with
+        if not ob.isbb and low <= ob.top and high >= ob.btm
+            smartStopLong := math.min(ob.btm - atrSL * 0.5, close - atrSL)
+            break
+else
+    smartStopLong := close - atrSL
+
+if bearOBs.size() > 0
+    smartStopShort := close + atrSL // Default fallback
+    for i = 0 to bearOBs.size() - 1
+        ob = bearOBs.get(i)
+        if not ob.isbb and high >= ob.btm and low <= ob.top
+            smartStopShort := math.max(ob.top + atrSL * 0.5, close + atrSL)
+            break
+else
+    smartStopShort := close + atrSL
+
+// --- 9.3 Dynamic Position Size Calculation ---
+// Calculate stop loss distances for both directions
+float stopDistLong = math.abs(close - smartStopLong)
+float stopDistShort = math.abs(smartStopShort - close)
+
+// Calculate risk amount based on account capital and risk percentage
+float riskAmount = accountCapital * (riskPerTrade / 100) * positionMultiplier
+
+// Calculate position sizes for both directions
+float positionSizeLong = stopDistLong > 0 ? safeDiv(riskAmount, stopDistLong) : 0
+float positionSizeShort = stopDistShort > 0 ? safeDiv(riskAmount, stopDistShort) : 0
+
+// --- 9.4 Multi-Level Take Profit ---
+float tp1Long = close + (close - smartStopLong) * riskReward1
+float tp2Long = close + (close - smartStopLong) * riskReward2
+float tp1Short = close - (smartStopShort - close) * riskReward1
+float tp2Short = close - (smartStopShort - close) * riskReward2
+
+// --- 9.5 Trailing Stop Logic (Activates AFTER TP1 Hit) ---
+var float trailingStop = na
+var bool trailActive = false
+float trailDistance = atrValue * trailATRMult
+
+if useTrailingStop and tradeState.isActive
+    if tradeState.isLong
+        // Activate trailing stop only after TP1 is hit
+        if high >= tradeState.takeProfit1 and not trailActive
+            trailActive := true
+            trailingStop := high - trailDistance
+        
+        // Update trailing stop if active (trail from high)
+        if trailActive
+            newTrail = high - trailDistance
+            trailingStop := math.max(nz(trailingStop), newTrail)
+            
+    else // Short trade
+        // Activate trailing stop only after TP1 is hit
+        if low <= tradeState.takeProfit1 and not trailActive
+            trailActive := true
+            trailingStop := low + trailDistance
+        
+        // Update trailing stop if active (trail from low)
+        if trailActive
+            newTrail = low + trailDistance
+            trailingStop := math.min(nz(trailingStop), newTrail)
+
+// ============================================
+// SECTION 10: CONFLICT RESOLUTION MODULE (5%)
+// ============================================
+
+// --- 10.1 Multi-Timeframe Alignment Check ---
+// Get trend from higher timeframes (v6 compatible with named parameters)
+int htfTrend0 = request.security(syminfo.tickerid, tf0, zlTrend, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+int htfTrend1 = request.security(syminfo.tickerid, tf1, zlTrend, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+int htfTrend2 = request.security(syminfo.tickerid, tf2, zlTrend, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+int htfTrend3 = request.security(syminfo.tickerid, tf3, zlTrend, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+int htfTrend4 = request.security(syminfo.tickerid, tf4, zlTrend, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+int htfTrend5 = request.security(syminfo.tickerid, tf5, zlTrend, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+// Calculate MTF alignment
+int mtfBullCount = (htfTrend1 == 1 ? 1 : 0) + (htfTrend2 == 1 ? 1 : 0) + 
+                   (htfTrend3 == 1 ? 1 : 0) + (htfTrend4 == 1 ? 1 : 0) + 
+                   (htfTrend5 == 1 ? 1 : 0)
+int mtfBearCount = (htfTrend1 == -1 ? 1 : 0) + (htfTrend2 == -1 ? 1 : 0) + 
+                   (htfTrend3 == -1 ? 1 : 0) + (htfTrend4 == -1 ? 1 : 0) + 
+                   (htfTrend5 == -1 ? 1 : 0)
+
+bool mtfBullishAligned = mtfBullCount >= 3
+bool mtfBearishAligned = mtfBearCount >= 3
+
+// --- 10.2 Trend Pulse Monitoring System ---
+// Create current trend string (6 timeframes: 1m, 5m, 15m, 1H, 4H, 1D)
+string trendStr1 = str.tostring(htfTrend0) + "," + str.tostring(htfTrend1) + "," + str.tostring(htfTrend2)
+string trendStr2 = str.tostring(htfTrend3) + "," + str.tostring(htfTrend4) + "," + str.tostring(htfTrend5)
+string currentTrendString = trendStr1 + "," + trendStr2
+
+// Store previous trend string
+var string previousTrendString = ""
+
+// Store individual previous trends for comparison
+var int prevTrend0 = 0
+var int prevTrend1 = 0
+var int prevTrend2 = 0
+var int prevTrend3 = 0
+var int prevTrend4 = 0
+var int prevTrend5 = 0
+
+// Initialize on first bar
+if bar_index == 0
+    previousTrendString := currentTrendString
+    prevTrend0 := htfTrend0
+    prevTrend1 := htfTrend1
+    prevTrend2 := htfTrend2
+    prevTrend3 := htfTrend3
+    prevTrend4 := htfTrend4
+    prevTrend5 := htfTrend5
+
+// Detect if ANY timeframe's trend changed
+bool trendPulseTriggered = false
+string changedTimeframes = ""
+string changedDetails = ""
+
+if bar_index > 0
+    // Check each timeframe individually
+    bool tf0Changed = htfTrend0 != prevTrend0
+    bool tf1Changed = htfTrend1 != prevTrend1
+    bool tf2Changed = htfTrend2 != prevTrend2
+    bool tf3Changed = htfTrend3 != prevTrend3
+    bool tf4Changed = htfTrend4 != prevTrend4
+    bool tf5Changed = htfTrend5 != prevTrend5
+    
+    // FIX: Removed tf0 (1-minute) to prevent loop alerts
+    // 1m timeframe is too sensitive and causes excessive alerts
+    if tf1Changed or tf2Changed or tf3Changed or tf4Changed or tf5Changed
+        trendPulseTriggered := true
+        
+        // Build changed timeframes list (excluding 1m)
+        if tf1Changed
+            changedTimeframes := changedTimeframes + tf1 + ","
+            changedDetails := changedDetails + tf1 + ":" + str.tostring(htfTrend1) + ";"
+        
+        if tf2Changed
+            changedTimeframes := changedTimeframes + tf2 + ","
+            changedDetails := changedDetails + tf2 + ":" + str.tostring(htfTrend2) + ";"
+        
+        if tf3Changed
+            changedTimeframes := changedTimeframes + tf3 + ","
+            changedDetails := changedDetails + tf3 + ":" + str.tostring(htfTrend3) + ";"
+        
+        if tf4Changed
+            changedTimeframes := changedTimeframes + tf4 + ","
+            changedDetails := changedDetails + tf4 + ":" + str.tostring(htfTrend4) + ";"
+        
+        if tf5Changed
+            changedTimeframes := changedTimeframes + tf5 + ","
+            changedDetails := changedDetails + tf5 + ":" + str.tostring(htfTrend5) + ";"
+
+
+
+
+// Update previous trend values for next bar
+if barstate.isconfirmed
+    previousTrendString := currentTrendString
+    prevTrend0 := htfTrend0
+    prevTrend1 := htfTrend1
+    prevTrend2 := htfTrend2
+    prevTrend3 := htfTrend3
+    prevTrend4 := htfTrend4
+    prevTrend5 := htfTrend5
+
+// --- 10.2 Volume Confirmation ---
+float avgVolume = ta.sma(volume, 20)
+bool volumeConfirmed = volume > avgVolume * 1.2
+
+// Volume Delta Check for Conflict Resolution
+bool volumeDeltaBullOK = volumeDeltaRatio > volumeDeltaThreshold
+bool volumeDeltaBearOK = volumeDeltaRatio < -volumeDeltaThreshold
+// FIX: Remove marketTrend == 0 condition - signals should only fire with established trend
+bool volumeDeltaOK = (marketTrend == 1 and volumeDeltaBullOK) or 
+                     (marketTrend == -1 and volumeDeltaBearOK)
+
+// --- 10.3 Conflict Resolution Rules ---
+// Rule 1: Structure & Liquidity > Momentum
+bool structureConfirmed = (marketTrend == 1 and isBullishStructure) or 
+                          (marketTrend == -1 and isBearishStructure)
+
+// Rule 2: MTF Alignment Check
+bool mtfAlignmentOK = not requireMTFAlign or 
+                      (marketTrend == 1 and mtfBullishAligned) or 
+                      (marketTrend == -1 and mtfBearishAligned)
+
+// Rule 3: Volume Confirmation (includes volume delta)
+// FIX: Changed from AND to OR to allow EITHER Volume Spike OR Strong Delta
+bool volumeOK = not requireVolConfirm or volumeConfirmed or volumeDeltaOK
+
+// Rule 4: No Trade in EQH/EQL Zones
+bool notInLiquidityZone = not blockEHLTrades or (not isEQH and not isEQL)
+
+// Combined Conflict Resolution
+bool bullishSignalAllowed = (mtfAlignmentOK and volumeOK and notInLiquidityZone and consensusScore >= minConfluenceScore)
+bool bearishSignalAllowed = (mtfAlignmentOK and volumeOK and notInLiquidityZone and (9 - consensusScore) >= minConfluenceScore)
+
+// ============================================
+// SECTION 11: 10 SPECIFIC SIGNALS
+// ============================================
+
+// --- Signal 1: Institutional Launchpad ---
+// SMC + Consensus + Breakout alignment
+bool signal1_InstitutionalLaunchpad = (smcEnabled and consensusEnabled and breakoutEnabled and priceInBullOB and consensusScore >= 7 and (bullishBreakout or trendLongBreak) and marketTrend == 1 and volumeOK and bullishSignalAllowed)
+
+bool signal1_InstitutionalLaunchpadBear = (smcEnabled and consensusEnabled and breakoutEnabled and priceInBearOB and consensusScore <= 2 and (bearishBreakdown or trendShortBreak) and marketTrend == -1 and volumeOK and bearishSignalAllowed)
+
+// --- Signal 2: Liquidity Trap Reversal ---
+// Sweep + OB + Volume confirmation
+bool signal2_LiquidityTrapBull = (smcEnabled and bullSweep and priceInBullOB and volumeOK and (marketTrend == 1 or adx > 25) and bullishSignalAllowed)
+
+bool signal2_LiquidityTrapBear = (smcEnabled and bearSweep and priceInBearOB and volumeOK and (marketTrend == -1 or adx > 25) and bearishSignalAllowed)
+
+// --- Signal 3: Momentum Breakout ---
+// Trendline break + Consensus > 7
+bool signal3_MomentumBreakoutBull = (breakoutEnabled and consensusEnabled and trendLongBreak and consensusScore >= 7 and volumeOK and bullishSignalAllowed)
+
+bool signal3_MomentumBreakoutBear = (breakoutEnabled and consensusEnabled and trendShortBreak and consensusScore <= 2 and volumeOK and bearishSignalAllowed)
+
+// --- Signal 4: Mitigation Test Entry ---
+// OB retest with volume
+bool signal4_MitigationTestBull = (smcEnabled and priceInBullOB and not newBullOB and close > open and volumeOK and marketTrend == 1 and bullishSignalAllowed)
+
+bool signal4_MitigationTestBear = (smcEnabled and priceInBearOB and not newBearOB and close < open and volumeOK and marketTrend == -1 and bearishSignalAllowed)
+
+// --- Signal 5: Bullish Exit ---
+// FIX: Made independent of tradeState for external tracking systems
+// Fires when: Momentum exhausted OR entered bearish zone
+bool signal5_BullishExit = (marketTrend == 1 and (priceInBearOB or (consensusScore <= 3 and consensusScore[1] >= 6)))
+
+// --- Signal 6: Bearish Exit ---
+// FIX: Made independent of tradeState for external tracking systems  
+// Fires when: Momentum exhausted OR entered bullish zone
+bool signal6_BearishExit = (marketTrend == -1 and (priceInBullOB or (consensusScore >= 6 and consensusScore[1] <= 3)))
+
+// --- Signal 7: Golden Pocket Flip ---
+// Structure break + Fib retracement (0.618-0.786)
+// v6 fix: Cache ta.highest/ta.lowest calls outside condition
+float fibHigh20 = ta.highest(high, 20)
+float fibLow20 = ta.lowest(low, 20)
+float fibLevel = 0.0
+if fibHigh20 != fibLow20
+    fibLevel := (close - fibLow20) / (fibHigh20 - fibLow20)
+
+bool signal7_GoldenPocketFlipBull = (smcEnabled and (isCHOCH or isBOS) and fibLevel >= 0.618 and fibLevel <= 0.786 and priceInBullOB and volumeOK and bullishSignalAllowed)
+
+bool signal7_GoldenPocketFlipBear = (smcEnabled and (isCHOCH or isBOS) and fibLevel >= 0.214 and fibLevel <= 0.382 and priceInBearOB and volumeOK and bearishSignalAllowed)
+
+// --- Signal 8: Volatility Squeeze Alert ---
+// Pre-breakout compression
+bool signal8_VolatilitySqueeze = (breakoutEnabled and volatilitySqueeze and consensusScore >= 4 and consensusScore <= 5)
+
+// --- Signal 9: Screener Full Bullish ---
+// All 9 indicators bullish + HTF alignment + structure
+bool signal9_ScreenerFullBullish = (consensusEnabled and consensusScore == 9 and mtfBullishAligned and marketTrend == 1 and volumeDeltaRatio > 2.0 and not priceInBearOB and not isEQH)
+
+// --- Signal 10: Screener Full Bearish ---
+// All 9 indicators bearish + HTF alignment + structure
+bool signal10_ScreenerFullBearish = (consensusEnabled and consensusScore == 0 and mtfBearishAligned and marketTrend == -1 and volumeDeltaRatio < -2.0 and not priceInBullOB and not isEQL)
+
+// ============================================
+// SIGNAL 12: Sideways Breakout (Smart Trend Catcher)
+// ============================================
+// Logic: Wait for Sideways (Squeeze/Neutral) -> THEN Trigger on Trend Flip
+// ============================================
+// SIGNAL 12: SIDEWAYS BREAKOUT (HYBRID LOGIC)
+// ============================================
+// Fires when:
+// 1. Trend JUST flipped (ZLEMA crossover) - Like OLD script
+// 2. Market has CURRENT momentum (ADX > 20) - Filters choppy markets
+// 3. Passes conflict resolution - Ensures signal aligns with market trend
+
+// Calculate ADX for real-time momentum detection
+[diPlus, diMinus, adxValue] = ta.dmi(14, 14)
+
+// Threshold: ADX > user-defined threshold means directional momentum
+// ADX < threshold means market is ranging → NO signal
+bool marketHasMomentum = adxValue > adxThreshold  // User-configurable (default 20)
+
+// Trend Flip Detection (from OLD script logic)
+// Bullish: ZLEMA just turned Green OR Price crossed above ZLEMA
+bool zlemaFlipBull = zlTrend == 1 and zlTrend[1] != 1
+bool priceCrossBull = ta.crossover(close, zlema)
+bool trendJustFlippedBull = zlemaFlipBull or priceCrossBull
+
+// Bearish: ZLEMA just turned Red OR Price crossed below ZLEMA
+bool zlemaFlipBear = zlTrend == -1 and zlTrend[1] != -1
+bool priceCrossBear = ta.crossunder(close, zlema)
+bool trendJustFlippedBear = zlemaFlipBear or priceCrossBear
+
+// Signal 12 Refined Logic (Trend Flip + Momentum + Consensus)
+// 1. Trigger: Trend just started (ZLEMA Cross)
+// 2. Filter: Market has Momentum (ADX > Threshold) - Confirms Breakout
+// 3. Filter: Consensus validates direction (Prevents weak whipsaws)
+bool consensusBull = consensusScore >= 4
+bool consensusBear = consensusScore <= 5
+
+bool signal12_SidewaysBreakoutBull = trendJustFlippedBull and marketHasMomentum and consensusBull and volumeOK and bullishSignalAllowed
+bool signal12_SidewaysBreakoutBear = trendJustFlippedBear and marketHasMomentum and consensusBear and volumeOK and bearishSignalAllowed
+
+// Calculate Signal 12 Confidence based on ADX strength
+string signal12Confidence = adxValue > 25 ? "HIGH" : adxValue > adxThreshold ? "MEDIUM" : "LOW"
+
+// ============================================
+// SECTION 12: TRADE STATE MANAGEMENT
+// ============================================
+
+// Entry Logic
+// v6 fix: Pre-compute entry conditions to avoid multi-line expressions in if statements
+bool longEntryCondition = (signal1_InstitutionalLaunchpad or signal2_LiquidityTrapBull or signal3_MomentumBreakoutBull or signal4_MitigationTestBull or signal7_GoldenPocketFlipBull or signal9_ScreenerFullBullish) and not tradeState.isActive
+bool shortEntryCondition = (signal1_InstitutionalLaunchpadBear or signal2_LiquidityTrapBear or signal3_MomentumBreakoutBear or signal4_MitigationTestBear or signal7_GoldenPocketFlipBear or signal10_ScreenerFullBearish) and not tradeState.isActive
+
+if showSignals
+    // Long Entry
+    if longEntryCondition
+        tradeState.isActive := true
+        tradeState.isLong := true
+        tradeState.entryPrice := close
+        tradeState.stopLoss := smartStopLong
+        tradeState.takeProfit1 := tp1Long
+        tradeState.takeProfit2 := tp2Long
+        tradeState.entryBar := bar_index
+        trailingStop := na
+        trailActive := false
+    
+    // Short Entry
+    if shortEntryCondition
+        tradeState.isActive := true
+        tradeState.isLong := false
+        tradeState.entryPrice := close
+        tradeState.stopLoss := smartStopShort
+        tradeState.takeProfit1 := tp1Short
+        tradeState.takeProfit2 := tp2Short
+        tradeState.entryBar := bar_index
+        trailingStop := na
+        trailActive := false
+
+// Exit Logic
+if tradeState.isActive
+    // Long Exit
+    if tradeState.isLong
+        if signal5_BullishExit or 
+           low <= tradeState.stopLoss or 
+           (useTrailingStop and trailActive and not na(trailingStop) and low <= trailingStop)
+            tradeState.isActive := false
+            trailingStop := na
+            trailActive := false
+    
+    // Short Exit
+    else
+        if signal6_BearishExit or 
+           high >= tradeState.stopLoss or 
+           (useTrailingStop and trailActive and not na(trailingStop) and high >= trailingStop)
+            tradeState.isActive := false
+            trailingStop := na
+            trailActive := false
+
+// ============================================
+// SECTION 13: VISUAL DISPLAY
+// ============================================
+
+// --- 13.1 Signal Plotting ---
+// Bullish Signals
+plotshape(showSignals and signal1_InstitutionalLaunchpad, 
+    title="Institutional Launchpad (Bull)", 
+    style=shape.labelup, location=location.belowbar, 
+    color=bullColor, text="IL", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal2_LiquidityTrapBull, 
+    title="Liquidity Trap (Bull)", 
+    style=shape.labelup, location=location.belowbar, 
+    color=bullColor, text="LT", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal3_MomentumBreakoutBull, 
+    title="Momentum Breakout (Bull)", 
+    style=shape.labelup, location=location.belowbar, 
+    color=bullColor, text="MB", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal4_MitigationTestBull, 
+    title="Mitigation Test (Bull)", 
+    style=shape.labelup, location=location.belowbar, 
+    color=bullColor, text="MT", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal7_GoldenPocketFlipBull, 
+    title="Golden Pocket (Bull)", 
+    style=shape.labelup, location=location.belowbar, 
+    color=bullColor, text="GP", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal9_ScreenerFullBullish, 
+    title="Full Bullish Screener", 
+    style=shape.labelup, location=location.belowbar, 
+    color=color.lime, text="FULL", textcolor=color.white, size=size.normal)
+
+// Bearish Signals
+plotshape(showSignals and signal1_InstitutionalLaunchpadBear, 
+    title="Institutional Launchpad (Bear)", 
+    style=shape.labeldown, location=location.abovebar, 
+    color=bearColor, text="IL", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal2_LiquidityTrapBear, 
+    title="Liquidity Trap (Bear)", 
+    style=shape.labeldown, location=location.abovebar, 
+    color=bearColor, text="LT", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal3_MomentumBreakoutBear, 
+    title="Momentum Breakout (Bear)", 
+    style=shape.labeldown, location=location.abovebar, 
+    color=bearColor, text="MB", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal4_MitigationTestBear, 
+    title="Mitigation Test (Bear)", 
+    style=shape.labeldown, location=location.abovebar, 
+    color=bearColor, text="MT", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal7_GoldenPocketFlipBear, 
+    title="Golden Pocket (Bear)", 
+    style=shape.labeldown, location=location.abovebar, 
+    color=bearColor, text="GP", textcolor=color.white, size=size.small)
+
+plotshape(showSignals and signal10_ScreenerFullBearish, 
+    title="Full Bearish Screener", 
+    style=shape.labeldown, location=location.abovebar, 
+    color=color.maroon, text="FULL", textcolor=color.white, size=size.normal)
+
+// Exit Signals
+plotshape(showSignals and signal5_BullishExit, 
+    title="Bullish Exit", 
+    style=shape.xcross, location=location.abovebar, 
+    color=neutralColor, size=size.tiny)
+
+plotshape(showSignals and signal6_BearishExit, 
+    title="Bearish Exit", 
+    style=shape.xcross, location=location.belowbar, 
+    color=neutralColor, size=size.tiny)
+
+// Volatility Squeeze Alert
+plotshape(showSignals and signal8_VolatilitySqueeze, 
+    title="Volatility Squeeze", 
+    style=shape.diamond, location=location.bottom, 
+    color=neutralColor, text="SQ", textcolor=color.white, size=size.tiny)
+
+// Trend Pulse Alert
+plotshape(showSignals and trendPulseTriggered, 
+    title="Trend Pulse", 
+    style=shape.circle, location=location.top, 
+    color=color.new(#673AB7, 0), text="⚡", textcolor=color.white, size=size.tiny)
+
+// --- 13.2 Trend Catcher Overlay ---
+color zlemaColor = zlTrend == 1 ? color.new(bullColor, 70) : color.new(bearColor, 70)
+plot(showTrendCatcher ? zlema : na, "ZLEMA", color=zlemaColor, linewidth=2)
+// Removed Upper/Lower Band plots to reduce plot count (was exceeding 64 limit)
+
+// --- 13.3 Bar Coloring ---
+color barCol = na
+if colorBars
+    if zlTrend == 1
+        barCol := bullColor
+    else if zlTrend == -1
+        barCol := bearColor
+    
+    // Warning color for potential reversal
+    if zlTrend == 1 and close < low[1] and close < low[2]
+        barCol := neutralColor
+    if zlTrend == -1 and close > high[1] and close > high[2]
+        barCol := neutralColor
+
+barcolor(barCol)
+
+// --- 13.4 Order Block Visualization ---
+// --- 13.4 Order Block Visualization ---
+// --- 13.4 Order Block Visualization ---
+if barstate.islast and showOB and smcEnabled
+    // Cleanup old drawings first to prevent clutter
+    if bin.bx.size() > 0
+        for i = 0 to bin.bx.size() - 1
+            box.delete(bin.bx.get(i))
+        bin.bx.clear()
+        
+    if bin.ln.size() > 0
+        for i = 0 to bin.ln.size() - 1
+            line.delete(bin.ln.get(i))
+        bin.ln.clear()
+        
+    if bin.lb.size() > 0
+        for i = 0 to bin.lb.size() - 1
+            label.delete(bin.lb.get(i))
+        bin.lb.clear()
+
+    // Draw Bullish Order Blocks (show ALL, broken or not)
+    if bullOBs.size() > 0
+        for i = 0 to math.min(obLast - 1, bullOBs.size() - 1)
+            ob = bullOBs.get(i)
+            // Removed 'if not ob.isbb' check - show all OBs for visual context
+            bin.bx.unshift(box.new(
+                left=ob.loc, right=time, top=ob.top, bottom=ob.btm,
+                border_color=na, bgcolor=ob.css, xloc=xloc.bar_time
+            ))
+            // Solid/Dashed line extension (Old Style)
+            bin.ln.unshift(line.new(
+                x1=ob.loc, x2=time, y1=ob.avg, y2=ob.avg,
+                color=color.new(bullColor, 50), style=line.style_dashed, xloc=xloc.bar_time
+            ))
+    
+    // Draw Bearish Order Blocks (show ALL, broken or not)
+    if bearOBs.size() > 0
+        for i = 0 to math.min(obLast - 1, bearOBs.size() - 1)
+            ob = bearOBs.get(i)
+            // Removed 'if not ob.isbb' check - show all OBs for visual context
+            bin.bx.unshift(box.new(
+                left=ob.loc, right=time, top=ob.top, bottom=ob.btm,
+                border_color=na, bgcolor=ob.css, xloc=xloc.bar_time
+            ))
+            bin.ln.unshift(line.new(
+                x1=ob.loc, x2=time,y1=ob.avg, y2=ob.avg,
+                color=color.new(bearColor, 50), style=line.style_dashed, xloc=xloc.bar_time
+            ))
+
+// --- 13.5 FVG Visualization ---
+if barstate.islast and showFVG and smcEnabled
+    // Draw Bullish FVGs (Extended to current time)
+    if bullFVGs.size() > 0
+        for i = 0 to math.min(fvgNum - 1, bullFVGs.size() - 1)
+            fvg = bullFVGs.get(i)
+            if not fvg.isbb
+                bin.bx.unshift(box.new(
+                    left=fvg.loc, right=time, top=fvg.top, bottom=fvg.btm,
+                    border_color=na, bgcolor=color.new(bullColor, 85), xloc=xloc.bar_time
+                ))
+    
+    // Draw Bearish FVGs
+    if bearFVGs.size() > 0
+        for i = 0 to math.min(fvgNum - 1, bearFVGs.size() - 1)
+            fvg = bearFVGs.get(i)
+            if not fvg.isbb
+                bin.bx.unshift(box.new(
+                    left=fvg.loc, right=time, top=fvg.top, bottom=fvg.btm,
+                    border_color=na, bgcolor=color.new(bearColor, 85), xloc=xloc.bar_time
+                ))
+
+// --- 13.6 Short-Term Market Structure (BOS/CHoCH) - NEW RESTORED LOGIC ---
+// This draws the "ZigZag" lines and Break of Structure labels
+if smcEnabled and showSwing and bar_index > msLen
+    // Use line.new for persistent historical lines if needed, or just standard plot/shape
+    // But aligning with "Old Style", we want dashed lines at the break points
+    
+    // Check if we just had a BOS/CHoCH in the recent history to draw
+    if isBOS
+        l = line.new(bar_index[msLen], lastBOS, bar_index, lastBOS, color=marketTrend==1?bullColor:bearColor, style=line.style_dashed)
+        lbl = label.new(int(math.avg(bar_index[msLen], bar_index)), lastBOS, "BOS", color=color.new(color.white, 100), textcolor=marketTrend==1?bullColor:bearColor, style=label.style_label_center, size=size.tiny)
+        
+    if isCHOCH
+        l = line.new(bar_index[msLen], lastCHOCH, bar_index, lastCHOCH, color=marketTrend==1?bullColor:bearColor, style=line.style_dotted, width=2)
+        lbl = label.new(int(math.avg(bar_index[msLen], bar_index)), lastCHOCH, "CHoCH", color=color.new(color.white, 100), textcolor=marketTrend==1?bullColor:bearColor, style=label.style_label_center, size=size.tiny)
+
+
+// --- 13.7 Equal H/L Visualization ---
+if showEHL and isEQH
+    line.new(bar_index - 1, high, bar_index, high, color=bearColor, style=line.style_dotted, width=2)
+if showEHL and isEQL
+    line.new(bar_index - 1, low, bar_index, low, color=bullColor, style=line.style_dotted, width=2)
+
+// --- 13.8 Debug Label ---
+var label debugLbl = na
+label.delete(debugLbl)
+if barstate.islast
+    string debugText = "OB: " + str.tostring(bullOBs.size()) + "B/" + str.tostring(bearOBs.size()) + "S | FVG: " + str.tostring(bullFVGs.size()) + "B/" + str.tostring(bearFVGs.size()) + "S | Trend: " + (marketTrend == 1 ? "BULL" : marketTrend == -1 ? "BEAR" : "NONE")
+    debugLbl := label.new(bar_index, high + (high * 0.001), debugText, color=color.new(#673AB7, 20), textcolor=color.white, style=label.style_label_down, size=size.small)
+
+// ============================================
+// SECTION 14: DATA TABLES & DASHBOARD
+// ============================================
+
+// --- 14.1 Confluence Score Dashboard ---
+var table dashboardTable = table.new(position.top_right, 3, 8, border_width=1)
+
+if barstate.islast and showDashboard
+    // Header
+    table.cell(dashboardTable, 0, 0, "ZEPIX v3.0", bgcolor=#673AB7, text_color=color.white, text_size=size.large)
+    table.cell(dashboardTable, 1, 0, "Status", bgcolor=#673AB7, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 0, "Value", bgcolor=#673AB7, text_color=color.white, text_size=size.normal)
+    
+    // Confluence Score
+    scoreColor = consensusScore >= 7 ? bullColor : consensusScore <= 2 ? bearColor : neutralColor
+    table.cell(dashboardTable, 0, 1, "Confluence", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 1, 1, str.tostring(consensusScore) + "/9", bgcolor=scoreColor, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 1, consensusScore >= 7 ? "STRONG" : consensusScore <= 2 ? "WEAK" : "NEUTRAL", bgcolor=scoreColor, text_color=color.white, text_size=size.normal)
+    
+    // Market Trend
+    trendColor = marketTrend == 1 ? bullColor : marketTrend == -1 ? bearColor : color.gray
+    table.cell(dashboardTable, 0, 2, "Trend", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 1, 2, marketTrend == 1 ? "BULL" : marketTrend == -1 ? "BEAR" : "NONE", bgcolor=trendColor, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 2, structureTrend == 1 ? "UP" : "DOWN", bgcolor=trendColor, text_color=color.white, text_size=size.normal)
+    
+    // MTF Alignment
+    mtfColor = mtfBullishAligned ? bullColor : mtfBearishAligned ? bearColor : color.gray
+    table.cell(dashboardTable, 0, 3, "MTF", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 1, 3, str.tostring(mtfBullCount) + "B/" + str.tostring(mtfBearCount) + "S", bgcolor=mtfColor, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 3, mtfBullishAligned ? "ALIGNED" : mtfBearishAligned ? "ALIGNED" : "MIXED", bgcolor=mtfColor, text_color=color.white, text_size=size.normal)
+    
+    // Volume
+    volColor = volumeConfirmed ? bullColor : color.gray
+    table.cell(dashboardTable, 0, 4, "Volume", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 1, 4, volumeConfirmed ? "HIGH" : "LOW", bgcolor=volColor, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 4, str.tostring(math.round(volume/avgVolume*100)) + "%", bgcolor=volColor, text_color=color.white, text_size=size.normal)
+    
+    // Trade Status
+    tradeColor = tradeState.isActive ? (tradeState.isLong ? bullColor : bearColor) : color.gray
+    table.cell(dashboardTable, 0, 5, "Trade", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 1, 5, tradeState.isActive ? (tradeState.isLong ? "LONG" : "SHORT") : "NONE", bgcolor=tradeColor, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 5, tradeState.isActive ? str.tostring(math.round(tradeState.entryPrice, 2)) : "-", bgcolor=tradeColor, text_color=color.white, text_size=size.normal)
+    
+    // SMC Status (shows any OB proximity for context)
+    smcColor = priceInAnyBullOB ? bullColor : priceInAnyBearOB ? bearColor : color.gray
+    table.cell(dashboardTable, 0, 6, "SMC", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 1, 6, priceInAnyBullOB ? "BULL OB" : priceInAnyBearOB ? "BEAR OB" : "NONE", bgcolor=smcColor, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 6, isEQH ? "EQH" : isEQL ? "EQL" : "-", bgcolor=smcColor, text_color=color.white, text_size=size.normal)
+    
+    // Position Size (shows calculated position based on account capital)
+    float displayPosSize = tradeState.isLong ? positionSizeLong : positionSizeShort
+    table.cell(dashboardTable, 0, 7, "Position", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 1, 7, str.tostring(math.round(positionMultiplier * 100)) + "% Size", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(dashboardTable, 2, 7, "$" + str.tostring(math.round(riskAmount, 2)) + " Risk", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+
+// --- 14.2 Timeframe Table ---
+var table tfTable = table.new(position.bottom_right, 2, 6, border_width=1)
+
+if barstate.islast and showTimeframeTable
+    table.cell(tfTable, 0, 0, "Timeframe", bgcolor=#673AB7, text_color=color.white, text_size=size.normal)
+    table.cell(tfTable, 1, 0, "Trend", bgcolor=#673AB7, text_color=color.white, text_size=size.normal)
+    
+    table.cell(tfTable, 0, 1, tf1, bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(tfTable, 1, 1, htfTrend1 == 1 ? "Bullish" : "Bearish", bgcolor=htfTrend1 == 1 ? bullColor : bearColor, text_color=color.white, text_size=size.normal)
+    
+    table.cell(tfTable, 0, 2, tf2, bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(tfTable, 1, 2, htfTrend2 == 1 ? "Bullish" : "Bearish", bgcolor=htfTrend2 == 1 ? bullColor : bearColor, text_color=color.white, text_size=size.normal)
+    
+    table.cell(tfTable, 0, 3, tf3, bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(tfTable, 1, 3, htfTrend3 == 1 ? "Bullish" : "Bearish", bgcolor=htfTrend3 == 1 ? bullColor : bearColor, text_color=color.white, text_size=size.normal)
+    
+    table.cell(tfTable, 0, 4, tf4, bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(tfTable, 1, 4, htfTrend4 == 1 ? "Bullish" : "Bearish", bgcolor=htfTrend4 == 1 ? bullColor : bearColor, text_color=color.white, text_size=size.normal)
+    
+    table.cell(tfTable, 0, 5, tf5, bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(tfTable, 1, 5, htfTrend5 == 1 ? "Bullish" : "Bearish", bgcolor=htfTrend5 == 1 ? bullColor : bearColor, text_color=color.white, text_size=size.normal)
+
+// --- 14.3 Volume Data Table ---
+var table volTable = table.new(position.middle_right, 2, 5, border_width=1)  // Changed from 4 to 5 rows for ADX
+
+// FIXED: Robust Volume Accumulation Logic (Unique Variables)
+var float upVol_Fixed = 0.0
+var float dnVol_Fixed = 0.0
+
+if barstate.isconfirmed
+    if marketTrend == 1
+        upVol_Fixed := upVol_Fixed + volume
+        // Reset counter trend
+        dnVol_Fixed := 0.0
+    else if marketTrend == -1
+        dnVol_Fixed := dnVol_Fixed + volume
+        upVol_Fixed := 0.0
+    else
+        // Reset both on uncertain trend? Or keep existing?
+        // Let's keep them until a new trend forms
+        na
+
+if barstate.islast and showVolumeTable
+    table.cell(volTable, 0, 0, "Volume Data", bgcolor=#673AB7, text_color=color.white, text_size=size.normal)
+    table.cell(volTable, 1, 0, "Value", bgcolor=#673AB7, text_color=color.white, text_size=size.normal)
+    
+    // Display current bar buy/sell volume using Intra-Bar Estimation (Ratio method)
+    // This solves the issue of "0 Sell Volume" on green candles
+    float range_ = high - low
+    float estBuyVol = range_ > 0 ? volume * ((close - low) / range_) : (close >= open ? volume * 0.5 : volume * 0.5)
+    float estSellVol = range_ > 0 ? volume * ((high - close) / range_) : (close < open ? volume * 0.5 : volume * 0.5)
+    
+    // Showing Current Bar Volume (Simpler and clearer than Trend Accumulation)
+    table.cell(volTable, 0, 1, "Buy Volume", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(volTable, 1, 1, str.tostring(estBuyVol, format.volume), bgcolor=bullColor, text_color=color.white, text_size=size.normal)
+    
+    table.cell(volTable, 0, 2, "Sell Volume", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(volTable, 1, 2, str.tostring(estSellVol, format.volume), bgcolor=bearColor, text_color=color.white, text_size=size.normal)
+    
+    deltaStr = avgVolumeDelta > 0 ? str.tostring(math.round(volumeDeltaRatio * 100)) + "%" : "0%"
+    table.cell(volTable, 0, 3, "Delta", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(volTable, 1, 3, deltaStr, bgcolor=neutralColor, text_color=#111620, text_size=size.normal)
+    
+    // ADX Momentum Display (Row 4)
+    string adxStr = str.tostring(adxValue, "#.#")
+    color adxBgColor = adxValue > 25 ? bullColor : adxValue > adxThreshold ? neutralColor : bearColor
+    string adxLabel = adxValue > 25 ? "STRONG" : adxValue > adxThreshold ? "MODERATE" : "WEAK"
+    
+    table.cell(volTable, 0, 4, "ADX (Momentum)", bgcolor=#111620, text_color=color.white, text_size=size.normal)
+    table.cell(volTable, 1, 4, adxStr + " (" + adxLabel + ")", bgcolor=adxBgColor, text_color=color.white, text_size=size.normal)
+
+// ============================================
+// SECTION 15: ALERT CONDITIONS (CONSOLIDATED)
+// ============================================
+
+// Helper function to create MTF alignment string
+mtfString = str.tostring(htfTrend5) + "," + str.tostring(htfTrend4) + "," + str.tostring(htfTrend3) + ","  + str.tostring(htfTrend2) + "," + str.tostring(htfTrend1)
+
+// --- SINGLE CONSOLIDATED ALERT FOR ALL SIGNALS ---
+// Detect which signal fired and prepare dynamic message
+var string activeSignalType = ""
+var string activeDirection = ""
+var string activeType = ""
+var string activeMessage = ""
+
+// Check all signals and create dynamic message
+if signal1_InstitutionalLaunchpad
+    activeSignalType := "Institutional_Launchpad"
+    activeDirection := "buy"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Institutional_Launchpad","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopLong) + ',"tp1_price":' + str.tostring(tp1Long) + ',"tp2_price":' + str.tostring(tp2Long) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal1_InstitutionalLaunchpadBear
+    activeSignalType := "Institutional_Launchpad"
+    activeDirection := "sell"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Institutional_Launchpad","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopShort) + ',"tp1_price":' + str.tostring(tp1Short) + ',"tp2_price":' + str.tostring(tp2Short) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal2_LiquidityTrapBull
+    activeSignalType := "Liquidity_Trap_Reversal"
+    activeDirection := "buy"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Liquidity_Trap_Reversal","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopLong) + ',"tp1_price":' + str.tostring(tp1Long) + ',"tp2_price":' + str.tostring(tp2Long) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal2_LiquidityTrapBear
+    activeSignalType := "Liquidity_Trap_Reversal"
+    activeDirection := "sell"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Liquidity_Trap_Reversal","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopShort) + ',"tp1_price":' + str.tostring(tp1Short) + ',"tp2_price":' + str.tostring(tp2Short) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal3_MomentumBreakoutBull
+    activeSignalType := "Momentum_Breakout"
+    activeDirection := "buy"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Momentum_Breakout","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopLong) + ',"tp1_price":' + str.tostring(tp1Long) + ',"tp2_price":' + str.tostring(tp2Long) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":false,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal3_MomentumBreakoutBear
+    activeSignalType := "Momentum_Breakout"
+    activeDirection := "sell"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Momentum_Breakout","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopShort) + ',"tp1_price":' + str.tostring(tp1Short) + ',"tp2_price":' + str.tostring(tp2Short) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":false,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal4_MitigationTestBull
+    activeSignalType := "Mitigation_Test_Entry"
+    activeDirection := "buy"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Mitigation_Test_Entry","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopLong) + ',"tp1_price":' + str.tostring(tp1Long) + ',"tp2_price":' + str.tostring(tp2Long) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal4_MitigationTestBear
+    activeSignalType := "Mitigation_Test_Entry"
+    activeDirection := "sell"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Mitigation_Test_Entry","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopShort) + ',"tp1_price":' + str.tostring(tp1Short) + ',"tp2_price":' + str.tostring(tp2Short) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal5_BullishExit
+    activeSignalType := "Bullish_Exit"
+    activeDirection := "sell"
+    activeType := "exit_v3"
+    activeMessage := '{"type":"exit_v3","signal_type":"Bullish_Exit","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"market_trend":' + str.tostring(marketTrend) + ',"reason":"TP_hit_or_reversal_or_momentum_loss"}'
+
+else if signal6_BearishExit
+    activeSignalType := "Bearish_Exit"
+    activeDirection := "buy"
+    activeType := "exit_v3"
+    activeMessage := '{"type":"exit_v3","signal_type":"Bearish_Exit","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"market_trend":' + str.tostring(marketTrend) + ',"reason":"TP_hit_or_reversal_or_momentum_loss"}'
+
+else if signal7_GoldenPocketFlipBull
+    activeSignalType := "Golden_Pocket_Flip"
+    activeDirection := "buy"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Golden_Pocket_Flip","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopLong) + ',"tp1_price":' + str.tostring(tp1Long) + ',"tp2_price":' + str.tostring(tp2Long) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"fib_level":' + str.tostring(fibLevel) + ',"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal7_GoldenPocketFlipBear
+    activeSignalType := "Golden_Pocket_Flip"
+    activeDirection := "sell"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Golden_Pocket_Flip","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"sl_price":' + str.tostring(smartStopShort) + ',"tp1_price":' + str.tostring(tp1Short) + ',"tp2_price":' + str.tostring(tp2Short) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":true,"fib_level":' + str.tostring(fibLevel) + ',"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal8_VolatilitySqueeze
+    activeSignalType := "Volatility_Squeeze"
+    activeDirection := "neutral"
+    activeType := "squeeze_v3"
+    activeMessage := '{"type":"squeeze_v3","signal_type":"Volatility_Squeeze","symbol":"{{ticker}}","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"market_trend":' + str.tostring(marketTrend) + ',"message":"Big move expected - prepare for breakout"}'
+
+else if signal9_ScreenerFullBullish
+    activeSignalType := "Screener_Full_Bullish"
+    activeDirection := "buy"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Screener_Full_Bullish","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":9,"sl_price":' + str.tostring(smartStopLong) + ',"tp1_price":' + str.tostring(tp1Long) + ',"tp2_price":' + str.tostring(tp2Long) + ',"mtf_trends":"' + mtfString + '","market_trend":1,"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":false,"full_alignment":true,"position_multiplier":1.0}'
+
+else if signal10_ScreenerFullBearish
+    activeSignalType := "Screener_Full_Bearish"
+    activeDirection := "sell"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Screener_Full_Bearish","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":0,"sl_price":' + str.tostring(smartStopShort) + ',"tp1_price":' + str.tostring(tp1Short) + ',"tp2_price":' + str.tostring(tp2Short) + ',"mtf_trends":"' + mtfString + '","market_trend":-1,"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":false,"full_alignment":true,"position_multiplier":1.0}'
+
+else if trendPulseTriggered
+    activeSignalType := "Trend_Pulse"
+    activeDirection := "neutral"
+    activeType := "trend_pulse_v3"
+    activeMessage := '{"type":"trend_pulse_v3","signal_type":"Trend_Pulse","symbol":"{{ticker}}","tf":"' + timeframe.period + '","price":{{close}},"current_trends":"' + currentTrendString + '","previous_trends":"' + previousTrendString + '","changed_timeframes":"' + changedTimeframes + '","change_details":"' + changedDetails + '","trend_labels":"1m,5m,15m,1H,4H,1D","market_trend":' + str.tostring(marketTrend) + ',"consensus_score":' + str.tostring(consensusScore) + ',"message":"Trend change detected on: ' + changedTimeframes + '"}'
+
+else if signal12_SidewaysBreakoutBull
+    activeSignalType := "Sideways_Breakout"
+    activeDirection := "buy"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Sideways_Breakout","symbol":"{{ticker}}","direction":"buy","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"adx_value":' + str.tostring(adxValue, '#.#') + ',"confidence":"' + signal12Confidence + '","sl_price":' + str.tostring(smartStopLong) + ',"tp1_price":' + str.tostring(tp1Long) + ',"tp2_price":' + str.tostring(tp2Long) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":false,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+else if signal12_SidewaysBreakoutBear
+    activeSignalType := "Sideways_Breakout"
+    activeDirection := "sell"
+    activeType := "entry_v3"
+    activeMessage := '{"type":"entry_v3","signal_type":"Sideways_Breakout","symbol":"{{ticker}}","direction":"sell","tf":"' + timeframe.period + '","price":{{close}},"consensus_score":' + str.tostring(consensusScore) + ',"adx_value":' + str.tostring(adxValue, '#.#') + ',"confidence":"' + signal12Confidence + '","sl_price":' + str.tostring(smartStopShort) + ',"tp1_price":' + str.tostring(tp1Short) + ',"tp2_price":' + str.tostring(tp2Short) + ',"mtf_trends":"' + mtfString + '","market_trend":' + str.tostring(marketTrend) + ',"volume_delta_ratio":' + str.tostring(volumeDeltaRatio) + ',"price_in_ob":false,"position_multiplier":' + str.tostring(positionMultiplier) + '}'
+
+// Single consolidated alert condition - triggers for ANY signal
+bool anySignalActive = signal1_InstitutionalLaunchpad or signal1_InstitutionalLaunchpadBear or 
+                       signal2_LiquidityTrapBull or signal2_LiquidityTrapBear or 
+                       signal3_MomentumBreakoutBull or signal3_MomentumBreakoutBear or 
+                       signal4_MitigationTestBull or signal4_MitigationTestBear or 
+                       signal5_BullishExit or signal6_BearishExit or 
+                       signal7_GoldenPocketFlipBull or signal7_GoldenPocketFlipBear or 
+                       signal8_VolatilitySqueeze or 
+                       signal9_ScreenerFullBullish or signal10_ScreenerFullBearish or 
+                       trendPulseTriggered or
+                       signal12_SidewaysBreakoutBull or signal12_SidewaysBreakoutBear
+
+// *** MAIN CONSOLIDATED ALERT - USE THIS ONE! ***
+// *** MAIN CONSOLIDATED ALERT - USE THIS ONE! ***
+// Triggers automatically for any valid signal
+if anySignalActive
+    alert(activeMessage, alert.freq_once_per_bar_close)
+
+// ============================================
+// SECTION 16: MITIGATION & CLEANUP (Modified Order)
+// ============================================
+
+// CRITICAL FIX: Mitigation checks run HERE (after signals) so alerts trigger on the touch bar
+// before the OB/FVG is marked as broken/mitigated.
+
+// Order Block Mitigation Check
+if barstate.isconfirmed and smcEnabled
+    // Check bullish OBs for mitigation
+    if bullOBs.size() > 0
+        for i = bullOBs.size() - 1 to 0
+            ob = bullOBs.get(i)
+            if not ob.isbb
+                mitigated = switch obMiti
+                    "Close" => math.min(close, open) < ob.btm
+                    "Wick"  => low < ob.btm
+                    "Avg"   => low < ob.avg
+                    => false
+                if mitigated
+                    ob.isbb := true
+                    ob.bbloc := time
+                    if not showOB
+                        bullOBs.remove(i)
+    
+    // Check bearish OBs for mitigation
+    if bearOBs.size() > 0
+        for i = bearOBs.size() - 1 to 0
+            ob = bearOBs.get(i)
+            if not ob.isbb
+                mitigated = switch obMiti
+                    "Close" => math.max(close, open) > ob.top
+                    "Wick"  => high > ob.top
+                    "Avg"   => high > ob.avg
+                    => false
+                if mitigated
+                    ob.isbb := true
+                    ob.bbloc := time
+                    if not showOB
+                        bearOBs.remove(i)
+
+// FVG Mitigation Check
+if barstate.isconfirmed and smcEnabled
+    // Check bullish FVGs
+    if bullFVGs.size() > 0
+        for i = bullFVGs.size() - 1 to 0
+            fvg = bullFVGs.get(i)
+            if not fvg.isbb
+                if low < fvg.btm
+                    fvg.isbb := true
+                    fvg.bbloc := time
+                    bullFVGs.remove(i)
+    
+    // Check bearish FVGs
+    if bearFVGs.size() > 0
+        for i = bearFVGs.size() - 1 to 0
+            fvg = bearFVGs.get(i)
+            if not fvg.isbb
+                if high > fvg.top
+                    fvg.isbb := true
+                    fvg.bbloc := time
+                    bearFVGs.remove(i)
+
+// ============================================
+// SECTION 17: PERFORMANCE OPTIMIZATION
+// ============================================
+
+// --- 16.1 Array Cleanup ---
+// Cleanup old Order Blocks
+if bar_index % CLEANUP_INTERVAL == 0
+    // Cleanup bullish OBs
+    if bullOBs.size() > MAX_OB_ARRAY
+        for i = bullOBs.size() - 1 to MAX_OB_ARRAY
+            bullOBs.pop()
+    
+    // Cleanup bearish OBs
+    if bearOBs.size() > MAX_OB_ARRAY
+        for i = bearOBs.size() - 1 to MAX_OB_ARRAY
+            bearOBs.pop()
+    
+    // Cleanup bullish FVGs
+    if bullFVGs.size() > MAX_FVG_ARRAY
+        for i = bullFVGs.size() - 1 to MAX_FVG_ARRAY
+            bullFVGs.pop()
+    
+    // Cleanup bearish FVGs
+    if bearFVGs.size() > MAX_FVG_ARRAY
+        for i = bearFVGs.size() - 1 to MAX_FVG_ARRAY
+            bearFVGs.pop()
+
+// --- 16.2 Historical Calculation Limiting ---
+bool withinCalcWindow = bar_index > last_bar_index - CALCULATION_WINDOW
+
+// ============================================
+// END OF ZEPIX ULTIMATE BOT v3.0
+// ============================================

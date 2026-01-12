@@ -1,0 +1,98 @@
+{
+    "version": "4.0",
+    "master_switch": true,
+    "timezone": "Asia/Kolkata",
+    "sessions": {
+        "asian": {
+            "name": "Asian Session",
+            "start_time": "05:00",
+            "end_time": "13:30",
+            "allowed_symbols": [
+                "USDJPY",
+                "AUDJPY",
+                "AUDUSD",
+                "NZDUSD"
+            ],
+            "advance_alert_enabled": true,
+            "advance_alert_minutes": 30,
+            "force_close_enabled": false,
+            "description": "User Rule: USDJPY, AUDJPY, AUDUSD, NZDUSD Allowed. Blocked: EURUSD, GBPUSD, GBPJPY"
+        },
+        "london": {
+            "name": "London Session",
+            "start_time": "13:30",
+            "end_time": "18:30",
+            "allowed_symbols": [
+                "EURUSD",
+                "GBPUSD",
+                "EURGBP",
+                "GBPJPY",
+                "EURJPY",
+                "XAUUSD"
+            ],
+            "advance_alert_enabled": true,
+            "advance_alert_minutes": 30,
+            "force_close_enabled": false,
+            "description": "User Rule: EURUSD, GBPUSD, EURGBP, GBPJPY, EURJPY, XAUUSD Allowed"
+        },
+        "overlap": {
+            "name": "Overlap Session",
+            "start_time": "18:30",
+            "end_time": "22:30",
+            "allowed_symbols": [
+                "EURUSD",
+                "GBPUSD",
+                "XAUUSD",
+                "USDJPY"
+            ],
+            "advance_alert_enabled": true,
+            "advance_alert_minutes": 30,
+            "force_close_enabled": false,
+            "description": "User Rule: EURUSD, GBPUSD, XAUUSD, USDJPY Allowed"
+        },
+        "ny_late": {
+            "name": "NY Late Session",
+            "start_time": "22:30",
+            "end_time": "03:30",
+            "allowed_symbols": [
+                "USDJPY",
+                "XAUUSD",
+                "USDCAD"
+            ],
+            "advance_alert_enabled": true,
+            "advance_alert_minutes": 30,
+            "force_close_enabled": false,
+            "description": "User Rule: USDJPY, XAUUSD, USDCAD Allowed. Blocked: EURUSD, GBPUSD"
+        },
+        "dead_zone": {
+            "name": "Dead Zone",
+            "start_time": "03:30",
+            "end_time": "05:00",
+            "allowed_symbols": [],
+            "advance_alert_enabled": false,
+            "advance_alert_minutes": 0,
+            "force_close_enabled": true,
+            "description": "User Rule: NO TRADES. ALL BLOCKED"
+        }
+    },
+    "all_symbols": [
+        "USDJPY",
+        "AUDJPY",
+        "AUDUSD",
+        "NZDUSD",
+        "EURUSD",
+        "GBPUSD",
+        "EURGBP",
+        "GBPJPY",
+        "EURJPY",
+        "XAUUSD",
+        "USDCAD"
+    ],
+    "alert_history": [],
+    "metadata": {
+        "created_at": "2026-01-12T00:30:00+05:30",
+        "last_modified": "2026-01-12T00:30:00+05:30",
+        "modified_by": "User Table Implementation",
+        "notes": "Strict adherence to User's Session Table provided on 2026-01-12"
+    }
+}

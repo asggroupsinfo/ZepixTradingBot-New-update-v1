@@ -1,0 +1,185 @@
+{
+  "timestamp": "2025-12-07T01:36:19.217476",
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0,
+    "pass_rate": 100.0
+  },
+  "results": [
+    {
+      "test": "Import TelegramBot",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.206428"
+    },
+    {
+      "test": "Import ReentryMenuHandler",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.208105"
+    },
+    {
+      "test": "Import ProfitBookingMenuHandler",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.208105"
+    },
+    {
+      "test": "Import FineTuneMenuHandler",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.208105"
+    },
+    {
+      "test": "Load config.json",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.211213"
+    },
+    {
+      "test": "Re-entry config exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.211213"
+    },
+    {
+      "test": "Autonomous config exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.211213"
+    },
+    {
+      "test": "Profit booking config exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.211213"
+    },
+    {
+      "test": "Initialize ReentryMenuHandler",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.211213"
+    },
+    {
+      "test": "Initialize ProfitBookingMenuHandler",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.211213"
+    },
+    {
+      "test": "ReentryMenuHandler.show_reentry_menu exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.214969"
+    },
+    {
+      "test": "ReentryMenuHandler.handle_toggle_callback exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.214969"
+    },
+    {
+      "test": "ReentryMenuHandler.toggle_autonomous_mode exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.214969"
+    },
+    {
+      "test": "ReentryMenuHandler.toggle_tp_continuation exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.214969"
+    },
+    {
+      "test": "ReentryMenuHandler.toggle_sl_hunt exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.214969"
+    },
+    {
+      "test": "ReentryMenuHandler.toggle_exit_continuation exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: toggle_autonomous",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: toggle_tp_continuation",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: toggle_sl_hunt",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: toggle_exit_continuation",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: profit_sl_mode_11",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: profit_sl_mode_21",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: toggle_profit_protection",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: toggle_profit_sl_hunt",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: rw_inc_XAUUSD_0",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: rw_dec_XAUUSD_0",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Callback format: ft_recovery_windows_edit",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.215973"
+    },
+    {
+      "test": "Config.update_nested exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.217476"
+    },
+    {
+      "test": "Config.save exists",
+      "status": "PASS",
+      "message": "",
+      "timestamp": "2025-12-07T01:36:19.217476"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+image_filename,signal_id,signal_name,approx_x,immediate_result,five_result,notes
+uploaded_image_0_1765555825108.jpg,sig_0_1,Bullish Entry,0.12,Correct,Correct,Strong trend follow
+uploaded_image_0_1765555825108.jpg,sig_0_2,Bearish Entry,0.67,Incorrect,Correct,"Immediate pullback, then drop"
+uploaded_image_1_1765555825108.jpg,sig_1_1,Bullish Entry,0.05,Correct,Incorrect,Failed after 2 candles
+uploaded_image_1_1765555825108.jpg,sig_1_2,Bearish Entry,0.32,Incorrect,Correct,Choppy entry
+uploaded_image_1_1765555825108.jpg,sig_1_3,Bullish Entry,0.5,Incorrect,Correct,Recovery caught
+uploaded_image_2_1765555825108.jpg,sig_2_1,Bearish Entry,0.35,Incorrect,Correct,Volatile accumulation
+uploaded_image_2_1765555825108.jpg,sig_2_2,Bullish Entry,0.47,Incorrect,Correct,Whipsaw handling
+uploaded_image_3_1765555825108.jpg,sig_3_1,Bearish Entry,0.38,Incorrect,Correct,Fakeout up then down
+uploaded_image_3_1765555825108.jpg,sig_3_2,Bullish Entry,0.38,Correct,Incorrect,Short lived bounce
+uploaded_image_3_1765555825108.jpg,sig_3_3,Bearish Entry,0.68,Correct,Correct,Clean breakdown
+uploaded_image_3_1765555825108.jpg,sig_3_4,Bullish Entry,0.58,Correct,NA,End of data
+uploaded_image_4_1765555825108.jpg,sig_4_1,Bearish Entry,0.25,Incorrect,Incorrect,Against strong trend
+uploaded_image_4_1765555825108.jpg,sig_4_2,Bullish Entry,0.52,Correct,Correct,Perfect trend catch

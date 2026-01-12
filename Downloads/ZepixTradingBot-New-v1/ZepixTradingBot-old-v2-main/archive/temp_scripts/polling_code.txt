@@ -1,0 +1,104 @@
+
+    def start_polling(self):
+        """Start polling for Telegram commands"""
+        def poll_commands():
+            offset = 0
+            print("[POLLING] Starting polling loop...")
+            cycle = 0
+            while True:
+                cycle += 1
+                try:
+                    url = f"{self.base_url}/getUpdates?offset={offset}&timeout=30"
+                    print(f"[POLLING-CYCLE-{cycle}] Making request to Telegram...")
+                    response = requests.get(url, timeout=35)
+                    print(f"[POLLING-CYCLE-{cycle}] Got response: status={response.status_code}")
+                    
+                    # Handle non-200 responses first
+                    if response.status_code == 409:
+                        # Conflict - another bot instance is polling
+                        print(f"[POLLING] Got HTTP 409 - another instance may be polling. Waiting...")
+                        time.sleep(30)
+                        continue
+                    elif response.status_code != 200:
+                        print(f"[POLLING] Unexpected status code: {response.status_code}")
+                        time.sleep(10)
+                        continue
+                    
+                    # Process 200 response
+                    data = response.json()
+                    if not data.get("ok"):
+                        print(f"Telegram API error: {data}")
+                        time.sleep(10)
+                        continue
+                    
+                    # Get updates and process them
+                    updates = data.get("result", [])
+                    
+                    for update in updates:
+                        offset = update["update_id"] + 1
+                        
+                        # Handle callback queries (inline keyboard buttons)
+                        if "callback_query" in update:
+                            callback_query = update["callback_query"]
+                            user_id = callback_query["from"]["id"]
+                            
+                            if user_id == self.config["allowed_telegram_user"]:
+                                try:
+                                    self.handle_callback_query(callback_query)
+                                    # Answer callback query
+                                    callback_id = callback_query["id"]
+                                    url = f"{self.base_url}/answerCallbackQuery"
+                                    requests.post(url, json={"callback_query_id": callback_id}, timeout=5)
+                                except Exception as e:
+                                    print(f"Callback query error: {e}")
+                            continue
+                        
+                        if "message" in update and "text" in update["message"]:
+                            message_data = update["message"]
+                            user_id = message_data["from"]["id"]
+                            text = message_data["text"].strip()
+                            
+                            print(f"[TELEGRAM] 📨 Received message from user {user_id}: {text}")
+                            sys.stdout.flush()
+                            
+                            if user_id == self.config["allowed_telegram_user"]:
+                                command_parts = text.split()
+                                if command_parts:
+                                    command = command_parts[0]
+                                    
+                                    print(f"[TELEGRAM] ✅ Processing command: {command}")
+                                    sys.stdout.flush()
+                                    
+                                    if command in self.command_handlers:
+                                        try:
+                                            print(f"[TELEGRAM] 🔄 Executing handler for: {command}")
+                                            sys.stdout.flush()
+                                            self.command_handlers[command](message_data)
+                                            print(f"[TELEGRAM] ✅ Command {command} executed successfully")
+                                            sys.stdout.flush()
+                                        except Exception as e:
+                                            error_msg = f"❌ Error executing {command}: {str(e)}"
+                                            self.send_message(error_msg)
+                                            print(f"[TELEGRAM] ❌ Command error: {e}")
+                                            sys.stdout.flush()
+                                    else:
+                                        print(f"[TELEGRAM] ⚠️ Unknown command: {command}")
+                                        sys.stdout.flush()
+                            else:
+                                print(f"[TELEGRAM] ❌ Unauthorized user: {user_id}")
+                                sys.stdout.flush()
+                
+                except Exception as e:
+                    print(f"[POLLING-ERROR-CYCLE-{cycle}] Telegram polling error: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    time.sleep(10)
+        
+        try:
+            thread = threading.Thread(target=poll_commands, daemon=True)
+            thread.start()
+            print("SUCCESS: Telegram bot polling started")
+        except Exception as e:
+            print(f"[ERROR] Failed to start polling thread: {e}")
+            import traceback
+            traceback.print_exc()

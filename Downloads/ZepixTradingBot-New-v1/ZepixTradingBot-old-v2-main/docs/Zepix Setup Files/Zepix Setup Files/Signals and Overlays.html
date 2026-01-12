@@ -1,0 +1,747 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Licensed by Zepix
+
+//@version=5
+indicator("Signals and Overlays", overlay=true)
+
+
+//-----------------------------------------------------------------------------}
+// <---PRESETS--->
+//-----------------------------------------------------------------------------} 
+
+// Create a dropdown input with options
+plotShapeOption = input.string("Zero Lag Overlays", "Select Indicator Preset", options=["Zero Lag Overlays", "Reversal + Volumes", "Breakouts Detector"], group="⭐=========== INDICATORS PRESETS")
+
+// Check which option is selected
+showSO  = plotShapeOption == "Zero Lag Overlays"
+showSV  = plotShapeOption == "Reversal + Volumes"
+showBRD  = plotShapeOption == "Breakouts Detector"
+
+
+
+
+
+//-----------------------------------------------------------------------------}
+// <---SWITCHES--->
+//-----------------------------------------------------------------------------} 
+
+lengthsg = input.int(50, "Signals Sensitivity", tooltip = "Adjust singals sensitivity according to your setup.", group = "1️⃣=========== Zero Lag Preset Settings")
+mult = input.float(1,"Band Multiplier", step=0.2, tooltip = "This value controls the thickness of the bands, a larger value makes the indicator less noisy", group = "1️⃣=========== Zero Lag Preset Settings")
+exitLenght = input.float(15,"Exit Length (Bars)", step=2, tooltip = "Increase length for higher targets, decrease length for lower targets", group = "1️⃣=========== Zero Lag Preset Settings")
+exitSignals = input.bool(true, 'Exit Signals', tooltip='Show exit trade signals on the chart', group = "1️⃣=========== Zero Lag Preset Settings" )
+showVT = input.bool(true, 'Volume Data Table', tooltip='Shows volume data and strength', group = "2️⃣=========== Reversal with Volumes Settings")
+prd = input.int(defval=5, title='Breakout Period', minval=2, group='3️⃣=========== BREAKOUT SETTINGS', tooltip = "Decrease period for more levels of Breakout/Breakdown" )
+infoDataTableOn = input.bool(false, title="Trend Strength Screener", group="⚡=========== TREND STRENGTH SCREENER SETTINGS", tooltip = "Enable Multi Trend Analyzer")
+showTrendCatcher = input.bool(title='Trend Catcher', defval=true, group='1️⃣=========== Zero Lag Preset Settings', tooltip='Enable Trend Catcher on chart')
+zlBar = input.bool(true, 'Bar Colours', tooltip='Show bar colors based on trend direction, including a distinct color for sideways movement', group = "📊=========== BAR SETTINGS" )
+greenbr = input.color(#089981, "Bullish Bar Color", group = "📊=========== BAR SETTINGS")
+redbr = input.color(#ff1100, "Bearish Bar Color", group = "📊=========== BAR SETTINGS")
+green = input.color(#673AB7, "Bullish Color", group = "🎨=========== CUSTOMIZE THEME COLORS")
+red = input.color(#ff1100, "Bearish Color", group = "🎨=========== CUSTOMIZE THEME COLORS")
+rvbr = input.color(color.rgb(255, 153, 0), "Reverse Trend Bar Color", group = "📊=========== BAR SETTINGS")
+showTT = input.bool(true, 'Timeframe Table', tooltip='Shows ongoing trend on diffrent timeframes', group = "1️⃣=========== Zero Lag Preset Settings")
+
+
+
+
+
+//-----------------------------------------------------------------------------}
+// <---SIGNALS AND OVERLAYS---> 
+//-----------------------------------------------------------------------------}
+
+t1 = input.timeframe("5", "Time frame 1", group = "1️⃣=========== Zero Lag Preset Settings")
+t2 = input.timeframe("15", "Time frame 2", group = "1️⃣=========== Zero Lag Preset Settings")
+t3 = input.timeframe("60", "Time frame 3", group = "1️⃣=========== Zero Lag Preset Settings")
+t4 = input.timeframe("240", "Time frame 4", group = "1️⃣=========== Zero Lag Preset Settings")
+t5 = input.timeframe("1D", "Time frame 5", group = "1️⃣=========== Zero Lag Preset Settings")
+
+src = close
+
+lag = math.floor((lengthsg - 1) / 2)
+
+zlema = ta.ema(src + (src - src[lag]), lengthsg)
+
+volatility = ta.highest(ta.atr(lengthsg), lengthsg*3) * mult
+
+var trend = 0
+
+if ta.crossover(close, zlema+volatility)
+    trend := 1
+
+if ta.crossunder(close, zlema-volatility)
+    trend := -1
+
+zlemaColor = trend == 1 ? color.new(green, 70) : color.new(red, 70)
+m = plot(zlema, linewidth=0, color=#00000000, editable=false)
+upper = plot(trend == -1 and showSO and showTrendCatcher ? zlema+volatility : na, style = plot.style_linebr, linewidth = 2, color = color.new(red, 70), editable=false)
+lower = plot(trend == 1 and showSO and showTrendCatcher? zlema-volatility : na, style = plot.style_linebr, linewidth = 2, color = color.new(green, 70), editable=false)
+
+fill(m, upper, (open + close) / 2, zlema+volatility, color.new(red, 75), color.new(red, 75))
+fill(m, lower, (open + close) / 2, zlema-volatility, color.new(green, 75), color.new(green, 75))
+
+plotshape(ta.crossunder(trend, 0) and showSO ? zlema+volatility : na, "Bearish Entry Signals", shape.labeldown, location.absolute, red, text = "▼-", textcolor = #ffffff, size = size.normal)
+plotshape(ta.crossover(trend, 0) and showSO ? zlema-volatility : na, "Bullish Entry Signals", shape.labelup, location.absolute, green, text = "▲+", textcolor = #ffffff, size = size.normal)
+
+
+s1 = request.security(syminfo.tickerid, t1, trend)
+s2 = request.security(syminfo.tickerid, t2, trend)
+s3 = request.security(syminfo.tickerid, t3, trend)
+s4 = request.security(syminfo.tickerid, t4, trend)
+s5 = request.security(syminfo.tickerid, t5, trend)
+
+s1a = s1 == 1 ? "Bullish" : "Bearish"
+s2a = s2 == 1 ? "Bullish" : "Bearish"
+s3a = s3 == 1 ? "Bullish" : "Bearish"
+s4a = s4 == 1 ? "Bullish" : "Bearish"
+s5a = s5 == 1 ? "Bullish" : "Bearish"
+
+if barstate.islast and showSO and showTT
+    var data_table = table.new(position=position.top_right, columns=2, rows=6, bgcolor=chart.bg_color)
+    table.cell(data_table, text_halign=text.align_center, column=0, row=0, text="🕑 Time Frame", bgcolor=#673AB7, text_color=#ffffff)
+    table.cell(data_table, text_halign=text.align_center, column=1, row=0, text="🔥 Trend", bgcolor=#673AB7, text_color=#ffffff)
+
+    table.cell(data_table, text_halign=text.align_center, column=0, row=1, text=t1, text_color=#ffffff, bgcolor=#111620)
+    table.cell(data_table, text_halign=text.align_center, column=1, row=1, text=s1a, text_color=#ffffff, bgcolor=s1a == "Bullish" ? #089981 : red)
+
+    table.cell(data_table, text_halign=text.align_center, column=0, row=2, text=t2, text_color=#ffffff, bgcolor=#111620)
+    table.cell(data_table, text_halign=text.align_center, column=1, row=2, text=s2a, text_color=#ffffff, bgcolor=s2a == "Bullish" ? #089981 : red)
+
+    table.cell(data_table, text_halign=text.align_center, column=0, row=3, text=t3, text_color=#ffffff, bgcolor=#111620)
+    table.cell(data_table, text_halign=text.align_center, column=1, row=3, text=s3a, text_color=#ffffff, bgcolor=s3a == "Bullish" ? #089981 : red)
+
+    table.cell(data_table, text_halign=text.align_center, column=0, row=4, text=t4, text_color=#ffffff, bgcolor=#111620)
+    table.cell(data_table, text_halign=text.align_center, column=1, row=4, text=s4a, text_color=#ffffff, bgcolor=s4a == "Bullish" ? #089981 : red)
+
+    table.cell(data_table, text_halign=text.align_center, column=0, row=5, text=t5, text_color=#ffffff, bgcolor=#111620)
+    table.cell(data_table, text_halign=text.align_center, column=1, row=5, text=s5a, text_color=#ffffff, bgcolor=s5a == "Bullish" ? #089981 : red)
+
+
+/////////////////////////////////////////ALERTS
+
+//-----------------------------------------------------------------------------
+// Alert conditions for triggering via alertcondition (for use in TradingView's alert system)
+alertcondition(ta.crossover(trend, 0), "Bullish Entry Signals", "New Bullish Entry Signal on {{ticker}} {{interval}}")
+alertcondition(ta.crossunder(trend, 0), "Bearish Entry Signals", "New Bearish Entry Signal on {{ticker}} {{interval}}")
+
+
+/////////////////////////////////////////EXIT SIGNALS
+
+//-----------------------------------------------------------------------------
+// Define a variable to track the bar index where a signal occurred
+var int bearishEntryBar = na
+var int bullishEntryBar = na
+
+// Detect Bearish Entry (ta.crossunder(trend, 0))
+if ta.crossunder(trend, 0)
+    bearishEntryBar := bar_index
+
+// Detect Bullish Entry (ta.crossover(trend, 0))
+if ta.crossover(trend, 0)
+    bullishEntryBar := bar_index
+
+// Plot exit signals (X mark) after 5 bars from entry
+plotshape(showSO and exitSignals and trend < 0 and bar_index == bearishEntryBar + exitLenght ? zlema+volatility : na, title="Bearish Exit Signal", location=location.belowbar, color=#ffbb00, style=shape.xcross, size=size.tiny)
+plotshape(showSO and exitSignals and trend > 0 and bar_index == bullishEntryBar + exitLenght ? zlema-volatility : na, title="Bullish Exit Signal", location=location.abovebar, color=#ffbb00, style=shape.xcross, size=size.tiny)
+
+//-----------------------------------------------------------------------------
+// Alert for exit signals
+alertcondition(bar_index == bullishEntryBar + exitLenght ? zlema-volatility : na, "Bullish Exit Appeared", "New Bullish Exit Signal on {{ticker}} {{interval}}")
+alertcondition(bar_index == bearishEntryBar + exitLenght ? zlema+volatility : na, "Bearish Exit Appeared", "New Bearish Exit Signal on {{ticker}} {{interval}}")
+
+//-----------------------------------------------------------------------------
+// Bar colors (Enabled only if showSV is selected)
+
+// Define conditions for changing candle color to yellow
+var color barColor = na
+
+if showSO
+    // Bullish condition
+    if zlBar and trend > 0
+        barColor := greenbr
+
+    // Bearish condition
+    if zlBar and trend < 0
+        barColor := redbr
+
+    // Bullish continuous trend but closes below last 2 candles → Yellow
+    if zlBar and trend > 0 and close < low[1] and close < low[2]
+        barColor := rvbr
+
+    // Bearish continuous trend but closes above last 2 candles → Yellow
+    if zlBar and trend < 0 and close > high[1] and close > high[2]
+        barColor := rvbr
+
+// Apply bar color
+barcolor(barColor)
+
+
+
+
+
+//-----------------------------------------------------------------------------}
+// <---SIGNALS AND VOLUMES---> 
+//-----------------------------------------------------------------------------}
+
+// ＩＮＰＵＴＳ ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+// Input parameters for length, momentum, and source data
+bool  shadow           = input.bool(true, "Trend Shadow", group = "Color", inline = "c", group='2️⃣=========== Reversal with Volumes Settings')
+int   vidya_length   = input.int(1, "Trend Length", group='2️⃣=========== Reversal with Volumes Settings')       // Length of the VIDYA calculation
+int   vidya_momentum = input.int(10, "Trend Momentum", group='2️⃣=========== Reversal with Volumes Settings')    // Momentum length for VIDYA
+float band_distance  = input.float(1, "Distance factor for upper/lower bands", step = 0.1, group='2️⃣=========== Reversal with Volumes Settings')  // Distance factor for upper/lower bands
+// Define pivot parameters
+int pivot_left_bars  = 3                                             // Left side pivot bars
+int pivot_right_bars = pivot_left_bars                              // Right side pivot bars
+
+float source         = input.source(close, "Data Source", group='2️⃣=========== Reversal with Volumes Settings')    // Source for VIDYA calculation
+
+// Define colors for up and down trends
+color up_trend_color   = green
+color down_trend_color = red
+
+
+// Initialize variables for line, volume, and trend state
+var line pivot_line    = na      // Variable for storing line references
+var float volume_value = na     // Variable for storing volume data
+float smoothed_value   = na   // Smoothing variable for VIDYA trend levels
+var bool is_trend_up   = na  // Boolean variable for tracking trend direction
+
+// Initialize arrays for storing line and volume information
+var array<line> liquidity_lines_low  = array.new<line>(500)    // Array for storing lines for lows
+var array<line> liquidity_lines_high = array.new<line>(500)  // Array for storing lines for highs
+
+var float up_trend_volume   = na     // Volume accumulated during uptrend
+var float down_trend_volume = na  // Volume accumulated during downtrend
+// }
+
+
+// ＦＵＮＣＴＩＯＮＳ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+
+// Define VIDYA (Variable Index Dynamic Average) function
+vidya_calc(src, vidya_length, vidya_momentum) =>
+    float momentum         = ta.change(src)
+    float sum_pos_momentum = math.sum((momentum >= 0) ? momentum : 0.0, vidya_momentum)
+    float sum_neg_momentum = math.sum((momentum >= 0) ? 0.0 : -momentum, vidya_momentum)
+    float abs_cmo          = math.abs(100 * (sum_pos_momentum - sum_neg_momentum) / (sum_pos_momentum + sum_neg_momentum))
+    float alpha            = 2 / (vidya_length + 1)
+    var float vidya_value  = 0.0
+    vidya_value           := alpha * abs_cmo / 100 * src + (1 - alpha * abs_cmo / 100) * nz(vidya_value[1])
+
+    ta.sma(vidya_value, 15)
+
+// Method to extend lines and add labels for liquidity levels
+method extend_liquidity_lines(array<line> line_array, float price_level, bool is_cross, volume_val)=>
+    if line_array.size() > 0 and last_bar_index - bar_index < 5000
+        for i = 0 to line_array.size()-1 
+            if i < line_array.size()
+                line liquidity_line      = line_array.get(i)
+                float current_line_level = line.get_y2(liquidity_line)
+                bool price_cross         = is_cross 
+                                  ? price_level < current_line_level and price_level[1] >= current_line_level 
+                                  : price_level > current_line_level and price_level[1] <= current_line_level
+
+                bool is_short_line = bar_index - line.get_x1(liquidity_line) < 50
+
+                if showSV and price_cross and is_short_line
+                    line.set_x2(liquidity_line, bar_index)
+                    line_array.remove(i)
+
+                    // Add volume label to the liquidity zone
+                    label.new(bar_index-1, price_level[1], 
+                             str.tostring(volume_val, format.volume), 
+                             color      = color.rgb(0, 0, 0, 99), 
+                             style      = is_cross ? label.style_label_lower_left : label.style_label_upper_left,
+                             textcolor  = chart.fg_color, 
+                             size       = size.small)
+
+                    // Add a circle label to represent liquidity zone
+                    label.new(bar_index-1, price_level[1], 
+                             text       = "◉", 
+                             color      = #00000003, 
+                             textcolor  = is_cross ? down_trend_color : up_trend_color, 
+                             style      = label.style_label_center, 
+                             size       = size.normal)
+// }
+
+
+// ＣＡＬＣＵＬＡＴＩＯＮＳ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+// Calculate the Average True Range (ATR)
+float atr_value = ta.atr(200)  // ATR calculation with length of 200
+
+// Calculate the VIDYA (Variable Index Dynamic Average)
+vidya_value = vidya_calc(source, vidya_length, vidya_momentum)
+
+// Calculate upper and lower bands based on VIDYA and ATR
+float upper_band = vidya_value + atr_value * band_distance
+float lower_band = vidya_value - atr_value * band_distance
+
+// Detect trend direction using crossovers of source with bands
+if ta.crossover(source, upper_band)
+    is_trend_up := true 
+if ta.crossunder(source, lower_band)
+    is_trend_up := false 
+
+// Set trend-based smoothing variable
+if is_trend_up
+    smoothed_value := lower_band
+if not is_trend_up
+    smoothed_value := upper_band
+if ta.change(is_trend_up)
+    smoothed_value := na
+
+// Calculate pivot highs and lows for price action
+float pivot_high = ta.pivothigh(pivot_left_bars, pivot_right_bars)
+float pivot_low  = ta.pivotlow(close, pivot_left_bars, pivot_right_bars)
+
+// Create and store lines for pivot lows (support zones)
+if showSV and low[pivot_right_bars] > smoothed_value and pivot_low 
+    pivot_line := line.new(
+                           bar_index[pivot_right_bars], 
+                           low[pivot_right_bars], 
+                           bar_index[pivot_right_bars]+5, 
+                           low[pivot_right_bars], 
+                           color = color.new(up_trend_color, 50)
+                           )
+
+    liquidity_lines_low.push(pivot_line)
+    volume_value := math.sum(volume, pivot_right_bars + pivot_left_bars) / (pivot_right_bars + pivot_left_bars)
+
+// Create and store lines for pivot highs (resistance zones)
+if showSV and high[pivot_right_bars] < smoothed_value and pivot_high 
+    pivot_line := line.new(
+                           bar_index[pivot_right_bars], 
+                           high[pivot_right_bars], 
+                           bar_index[pivot_right_bars]+5, 
+                           high[pivot_right_bars],
+                           color = color.new(down_trend_color, 50)
+                           )
+
+    liquidity_lines_high.push(pivot_line)
+    volume_value := math.sum(-volume, pivot_right_bars + pivot_left_bars) / (pivot_right_bars + pivot_left_bars)
+
+// Extend lines to track price movements
+liquidity_lines_high.extend_liquidity_lines(smoothed_value, true, volume_value)
+liquidity_lines_low.extend_liquidity_lines(smoothed_value, false, volume_value)
+
+// Detect changes in the trend direction
+bool trend_cross_up   = not is_trend_up[1] and is_trend_up
+bool trend_cross_down = not is_trend_up and is_trend_up[1]
+
+// Reset volume counters when trend changes
+if ta.change(trend_cross_up) or ta.change(trend_cross_down)
+    up_trend_volume := 0
+    down_trend_volume := 0
+
+// Accumulate volume during trends
+if not(ta.change(trend_cross_up) or ta.change(trend_cross_down))
+    up_trend_volume      += (close > open ? volume : 0)
+    down_trend_volume    += (close < open ? volume : 0)
+
+// Calculate average volume
+float avg_volume_delta    = (up_trend_volume + down_trend_volume) / 2
+
+// Determine the color of the trend
+color trend_color = is_trend_up ? up_trend_color 
+                       : not is_trend_up ? down_trend_color
+                       : chart.fg_color
+
+// Calculate delta volume percentage
+string delta_volume = 
+                   str.tostring(((up_trend_volume - down_trend_volume) / avg_volume_delta) * 100, format.percent) == "NaN%" 
+                   ? "0%" 
+                   : str.tostring(((up_trend_volume - down_trend_volume) / avg_volume_delta) * 100, format.percent)
+
+// }
+
+
+// ＰＬＯＴ ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+// Display labels for volume and trend statistics on the last bar
+
+
+// Create table only once
+var table volumeTable = table.new(position.top_right, 2, 4, border_width = 1)
+
+//Table color
+vt1 = up_trend_volume > 0 ? "Bullish" : "Bearish"
+vt2 = down_trend_volume > 0 ? "Bullish" : "Bearish"
+
+
+// Update the table on last bar and if showSV is true
+if barstate.islast and showSV and showVT
+    table.cell(volumeTable, 0, 0, "💪 Volume Data", bgcolor=#673AB7, text_color=#ffffff)
+    table.cell(volumeTable, 1, 0, "🔎 Values", bgcolor=#673AB7, text_color=#ffffff)
+
+
+    table.cell(volumeTable, 0, 1, "Buy Volume", bgcolor=#111620, text_color=#ffffff)
+    table.cell(volumeTable, 1, 1, str.tostring(up_trend_volume, format.volume), bgcolor=#089981, text_color=#ffffff)
+
+    table.cell(volumeTable, 0, 2, "Sell Volume", bgcolor=#111620, text_color=#ffffff)
+    table.cell(volumeTable, 1, 2, str.tostring(down_trend_volume, format.volume), bgcolor=#ff1100, text_color=#ffffff)
+
+    table.cell(volumeTable, 0, 3, "Volume Strength", bgcolor=#111620, text_color=#ffffff)
+    table.cell(volumeTable, 1, 3, str.tostring(delta_volume), bgcolor=#ffbb00, text_color=#111620)
+
+    
+    label.delete(label.new(bar_index, smoothed_value, 
+                 text       = "▶", 
+                 color      = #00000003,
+                 textcolor  = trend_color, 
+                 style      = label.style_label_center, 
+                 size       = size.large)[1])
+
+// Plot the VIDYA trend line only if showSV is true
+p1 = plot(showSV ? smoothed_value : na, color=trend_color, title = "Volume Trendline", linewidth=1, style=plot.style_cross)
+p2 = plot(showSV ? hl2 : na, editable = false, display=display.none)
+
+// Fill between the plot and the VIDYA line
+fill(p1, p2, smoothed_value, hl2, color.new(trend_color, shadow ? 80 : 100), na)
+
+// Plot trend change markers (up and down arrows)
+
+plotshape(
+         series     = (showSV and trend_cross_up[1]) ? smoothed_value[0] : na, 
+         title      = "Bullish Reversal Signals", 
+         style      = shape.labelup, 
+         location   = location.absolute, 
+         color      = color.new(up_trend_color, 0), 
+         text       = "R", 
+         textcolor  = chart.fg_color,
+         size       = size.small
+         )
+
+plotshape(
+         series     = (showSV and trend_cross_down[1]) ? smoothed_value[0] : na, 
+         title      = "Bearish Reversal Signals", 
+         style      = shape.labeldown, 
+         location   = location.absolute, 
+         color      = color.new(down_trend_color, 0), 
+         text       = "R", 
+         textcolor  = chart.fg_color,
+         size       = size.small
+         )
+// }
+
+alertcondition(trend_cross_up[1], "Bullish Reversal Signals", "New Bullish Reversal Signal on {{ticker}} {{interval}}")
+alertcondition(trend_cross_down[1], "Bearish Reversal Signals", "New Bearish Reversal Signal on {{ticker}} {{interval}}")
+
+//-----------------------------------------------------------------------------
+// Bar colors (Enabled only if showSV is selected)
+
+// Define conditions for changing candle color to yellow
+if showSV
+    var color barColor = na
+
+if showSV
+    // Bullish condition
+    if zlBar and source > upper_band
+        barColor := greenbr
+
+    // Bearish condition
+    if zlBar and source < lower_band
+        barColor := redbr
+
+
+
+
+
+//-----------------------------------------------------------------------------}
+//<---Breakout Finder--->
+//-----------------------------------------------------------------------------}
+
+// Breakout Settings
+bo_len = input.int(defval=200, title='Max Breakout Length', minval=30, maxval=300, group='3️⃣=========== BREAKOUT SETTINGS')
+mintest = input.int(defval=2, title='Minimum Number of Tests', minval=1, group='3️⃣=========== BREAKOUT SETTINGS')
+bocolorup = green
+bocolordown = red
+
+//width
+lll = math.max(math.min(bar_index, 300), 1)
+float h_ = ta.highest(lll)
+float l_ = ta.lowest(lll)
+float chwidth = (h_ - l_) * 0.04
+
+// check if PH/PL
+ph = ta.pivothigh(prd, prd)
+pl = ta.pivotlow(prd, prd)
+
+//keep Pivot Points and their locations in the arrays
+var phval = array.new_float(0)
+var phloc = array.new_int(0)
+var plval = array.new_float(0)
+var plloc = array.new_int(0)
+
+// keep PH/PL levels and locations
+if ph
+    array.unshift(phval, ph)
+    array.unshift(phloc, bar_index - prd)
+    if array.size(phval) > 1  // cleanup old ones
+        for x = array.size(phloc) - 1 to 1 by 1
+            if bar_index - array.get(phloc, x) > bo_len
+                array.pop(phloc)
+                array.pop(phval)
+
+if pl
+    array.unshift(plval, pl)
+    array.unshift(plloc, bar_index - prd)
+    if array.size(plval) > 1  // cleanup old ones
+        for x = array.size(plloc) - 1 to 1 by 1
+            if bar_index - array.get(plloc, x) > bo_len
+                array.pop(plloc)
+                array.pop(plval)
+
+// check bullish cup
+float bomax = na
+int bostart = bar_index
+num = 0
+hgst = ta.highest(prd)[1]
+if array.size(phval) >= mintest and close > open and close > hgst
+    bomax := array.get(phval, 0)
+    xx = 0
+    for x = 0 to array.size(phval) - 1 by 1
+        if array.get(phval, x) >= close
+            break
+        xx := x
+        bomax := math.max(bomax, array.get(phval, x))
+        bomax
+    if xx >= mintest and open <= bomax
+        for x = 0 to xx by 1
+            if array.get(phval, x) <= bomax and array.get(phval, x) >= bomax - chwidth
+                num += 1
+                bostart := array.get(phloc, x)
+                bostart
+        if num < mintest or hgst >= bomax
+            bomax := na
+            bomax
+
+if not na(bomax) and num >= mintest and showBRD
+    line.new(x1=bar_index, y1=bomax, x2=bostart, y2=bomax, color=bocolorup, style=line.style_dotted)
+    line.new(x1=bar_index, y1=bomax - chwidth, x2=bostart, y2=bomax - chwidth, color=bocolorup, style=line.style_dotted)
+    line.new(x1=bostart, y1=bomax - chwidth, x2=bostart, y2=bomax, color=bocolorup, style=line.style_dotted)
+    line.new(x1=bar_index, y1=bomax - chwidth, x2=bar_index, y2=bomax, color=bocolorup, style=line.style_dotted)
+
+alertcondition(not na(bomax) and num >= mintest, title = "Breakout Signal", message = "New Breakout Signal on {{ticker}} {{interval}}")
+plotshape(not na(bomax) and num >= mintest and showBRD, editable = false, location=location.belowbar, text='Breakout', textcolor=#ffffff, style=shape.labelup, color=bocolorup, size=size.small)
+
+// check bearish cup
+float bomin = na
+bostart := bar_index
+num1 = 0
+lwst = ta.lowest(prd)[1]
+if array.size(plval) >= mintest and close < open and close < lwst
+    bomin := array.get(plval, 0)
+    xx = 0
+    for x = 0 to array.size(plval) - 1 by 1
+        if array.get(plval, x) <= close
+            break
+        xx := x
+        bomin := math.min(bomin, array.get(plval, x))
+        bomin
+    if xx >= mintest and open >= bomin
+        for x = 0 to xx by 1
+            if array.get(plval, x) >= bomin and array.get(plval, x) <= bomin + chwidth
+                num1 += 1
+                bostart := array.get(plloc, x)
+                bostart
+        if num1 < mintest or lwst <= bomin
+            bomin := na
+            bomin
+
+if not na(bomin) and num1 >= mintest and showBRD
+    line.new(x1=bar_index, y1=bomin, x2=bostart, y2=bomin, color=bocolordown, style=line.style_dotted)
+    line.new(x1=bar_index, y1=bomin + chwidth, x2=bostart, y2=bomin + chwidth, color=bocolordown, style=line.style_dotted)
+    line.new(x1=bostart, y1=bomin + chwidth, x2=bostart, y2=bomin, color=bocolordown, style=line.style_dotted)
+    line.new(x1=bar_index, y1=bomin + chwidth, x2=bar_index, y2=bomin, color=bocolordown, style=line.style_dotted)
+
+plotshape(not na(bomin) and num1 >= mintest and showBRD, location=location.abovebar, editable =false, style=shape.labeldown, textcolor=#ffffff, text='Breakdown', color=bocolordown, size=size.small)
+
+alertcondition(not na(bomin) and num1 >= mintest, title = "Breakdown Signal", message = "New Breakdown Signal on {{ticker}} {{interval}}")
+
+
+
+
+
+//-----------------------------------------------------------------------------}
+// <---SCREENER CODE--->
+//-----------------------------------------------------------------------------}
+
+//Table Positions
+bright = position.bottom_right
+bleft = position.bottom_left
+bcenter = position.bottom_center
+tright = position.top_right
+tleft = position.top_left
+tcenter = position.top_center
+mright = position.middle_right
+mleft = position.middle_left
+mcenter = position.middle_center
+itablePosition = input.string(bright, title="Screener Position", options=[bright, bleft, bcenter, tright, tleft, tcenter, mright, mleft, mcenter], group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+//Lengths
+macdOn = input.bool(true, title="MACD", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+stochasticOn = input.bool(true, title="STOCHSTIC RSI", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+vortexOn = input.bool(true, title="VORTEX", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+momOn = input.bool(true, title="MOMENTUM", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+rsiOn = input.bool(true, title="RSI", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+psarOn = input.bool(true, title="PSAR", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+dmiOn = input.bool(true, title="DMI", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+mfiOn = input.bool(true, title="MONEY FLOW INDEX", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+fisherOn = input.bool(true, title="FISHER", group="⚡=========== TREND STRENGTH SCREENER SETTINGS")
+
+
+//Fisher Transform
+high_ = ta.highest(hl2, 14)
+low_ = ta.lowest(hl2, 14)
+round_(val) => val > .99 ? .999 : val < -.99 ? -.999 : val
+value = 0.0
+value := round_(.66 * ((hl2 - low_) / (high_ - low_) - .5) + .67 * nz(value[1]))
+fish1 = 0.0
+fish1 := .5 * math.log((1 + value) / (1 - value)) + .5 * nz(fish1[1])
+fish2 = fish1[1]
+
+//Stochastic RSI
+rsi1 = ta.rsi(close, 14)
+k = ta.sma(ta.stoch(rsi1, rsi1, rsi1, 14), 3)
+dsc = ta.sma(k, 3)
+
+//Vortex
+VMP = math.sum( math.abs( high - low[1]), 14)
+VMM = math.sum( math.abs( low - high[1]), 14)
+STR = math.sum( ta.atr(1), 14)
+VIP = VMP / STR
+VIM = VMM / STR
+
+//DMI
+[diplus, diminus, adx] = ta.dmi(14, 14)
+
+//PSAR
+psar = ta.sar(.02, .02, .02)
+
+//Momentum
+mom = ta.mom(close, 14)
+
+//Money Flow Index
+mfi = ta.mfi(close, 14)
+
+//RSI
+rsi = ta.rsi(close, 14)
+
+//MACD
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+
+//Create MACD indicator label table data
+macdIndicatorLabel = 'MACD Neutral'
+macdLabel = color.blue
+if macdLine > signalLine
+    macdLabel := #089981
+    macdIndicatorLabel := "MACD Bullish"
+else if macdLine < signalLine
+    macdLabel := color.rgb(255, 17, 0)
+    macdIndicatorLabel := "MACD Bearish"
+    
+//Create Stochastic RSI indicator label table data
+stochIndicatorLabel = 'Stochastic Neutral'
+stochLabel = color.blue
+if k > dsc
+    stochLabel := #089981
+    stochIndicatorLabel := "Stochastic Bullish"
+else if k < dsc
+    stochLabel := color.rgb(255, 17, 0)
+    stochIndicatorLabel := "Stochastic Bearish"
+    
+//Create Vortex indicator label table data
+vortexIndicatorLabel = 'Vortex Neutral'
+vortexLabel = color.blue
+if VIP > VIM
+    vortexLabel := #089981
+    vortexIndicatorLabel := "Vortex Bullish"
+else if VIP < VIM
+    vortexLabel := color.rgb(255, 17, 0)
+    vortexIndicatorLabel := "Vortex Bearish"
+
+//Create MFI indicator label table data
+mfiIndicatorLabel = 'MFI Neutral'
+mfiLabel = color.blue
+if mfi > mfi[1]
+    mfiLabel := #089981
+    mfiIndicatorLabel := "MFI Bullish"
+else if mfi < mfi[1]
+    mfiLabel := color.rgb(255, 17, 0)
+    mfiIndicatorLabel := "MFI Bearish"
+    
+//Create Fisher indicator label table data
+fisherIndicatorLabel = 'Fisher Neutral'
+fisherLabel = color.blue
+if fish1 > fish2
+    fisherLabel := #089981
+    fisherIndicatorLabel := "Fisher Bullish"
+else if fish1 < fish2
+    fisherLabel := color.rgb(255, 17, 0)
+    fisherIndicatorLabel := "Fisher Bearish"
+    
+//Create DMI indicator label table data
+dmiIndicatorLabel = 'DMI Neutral'
+dmiLabel = color.blue
+if diplus > diminus
+    dmiLabel := #089981
+    dmiIndicatorLabel := "DMI Bullish"
+else if diplus < diminus
+    dmiLabel := color.rgb(255, 17, 0)
+    dmiIndicatorLabel := "DMI Bearish"
+    
+//Create Momentum indicator label table data
+momIndicatorLabel = 'Momentum Neutral'
+momLabel = color.blue
+if mom > mom[1]
+    momLabel := #089981
+    momIndicatorLabel := "Momentum Bullish"
+else if mom < mom[1]
+    momLabel := color.rgb(255, 17, 0)
+    momIndicatorLabel := "Momentum Bearish"
+    
+//Create PSAR indicator label table data
+psarIndicatorLabel = 'PSAR Neutral'
+psarLabel = color.blue
+if close > psar
+    psarLabel := #089981
+    psarIndicatorLabel := "PSAR Bullish"
+else if close < psar
+    psarLabel := color.rgb(255, 17, 0)
+    psarIndicatorLabel := "PSAR Bearish"
+    
+//Create RSI indicator label table data
+rsiIndicatorLabel = 'RSI Neutral'
+rsiLabel = color.blue
+if rsi > rsi[1]
+    rsiLabel := #089981
+    rsiIndicatorLabel := "RSI Bullish"
+else if rsi < rsi[1]
+    rsiLabel := color.rgb(255, 17, 0)
+    rsiIndicatorLabel := "RSI Bearish"
+
+//Plot Price Difference Table
+infoDataTable = table.new(itablePosition, columns=1, rows=10)
+if infoDataTableOn and barstate.islast
+    table.cell(table_id=infoDataTable, column=0, row=8, text=mfiOn ? mfiIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=mfiLabel)
+    table.cell(table_id=infoDataTable, column=0, row=9, text=fisherOn ? fisherIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=fisherLabel)
+    table.cell(table_id=infoDataTable, column=0, row=7, text=dmiOn ? dmiIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=dmiLabel)
+    table.cell(table_id=infoDataTable, column=0, row=4, text=momOn ? momIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=momLabel)
+    table.cell(table_id=infoDataTable, column=0, row=6, text=psarOn ? psarIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=psarLabel)
+    table.cell(table_id=infoDataTable, column=0, row=5, text=rsiOn ? rsiIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=rsiLabel)
+    table.cell(table_id=infoDataTable, column=0, row=1, text=macdOn ? macdIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=macdLabel)
+    table.cell(table_id=infoDataTable, column=0, row=2, text=stochasticOn ? stochIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=stochLabel)
+    table.cell(table_id=infoDataTable, column=0, row=3, text=vortexOn ? vortexIndicatorLabel : na, height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=vortexLabel)
+    table.cell(table_id=infoDataTable, column=0, row=0, text="🔥 TREND STRENGTH SCREENER", height=0, text_color=color.white, text_halign=text.align_left, text_valign=text.align_top, bgcolor=#673AB7)
+
+//Alerts
+alertcondition(rsiLabel == #ff1100 and mfiLabel == #ff1100 and fisherLabel == #ff1100 and dmiLabel == #ff1100 and momLabel == #ff1100 and psarLabel == #ff1100 and 
+ macdLabel == #ff1100 and stochLabel == #ff1100 and vortexLabel == #ff1100, "[Screener] Full Bearish Alert", "All Bearish Indicators {{ticker}} {{interval}}")
+ 
+alertcondition(rsiLabel == #089981 and mfiLabel == #089981 and fisherLabel == #089981 and dmiLabel == #089981 and momLabel == #089981 and psarLabel == #089981 and 
+ macdLabel == #089981 and stochLabel == #089981 and vortexLabel == #089981, "[Screener] Full Bullish Alert", "All Bullish Indicators {{ticker}} {{interval}}")

@@ -1,0 +1,80 @@
+{
+    "symbols": {
+        "XAUUSD": {
+            "1h": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:28:17.062585"
+            },
+            "15m": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:28:17.061034"
+            },
+            "1d": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:28:17.064092"
+            },
+            "4h": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:28:17.062585"
+            }
+        },
+        "EURUSD": {
+            "1h": {
+                "trend": "BULLISH",
+                "mode": "AUTO",
+                "last_update": "2025-11-09T11:56:54.303563"
+            },
+            "15m": {
+                "trend": "BULLISH",
+                "mode": "AUTO",
+                "last_update": "2025-11-09T00:50:12.290717"
+            }
+        },
+        "AUDUSD": {
+            "1h": {
+                "trend": "BULLISH",
+                "mode": "MANUAL",
+                "last_update": "2025-10-07T06:14:08.730995"
+            }
+        },
+        "GBPUSD": {
+            "1h": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:44:50.391394"
+            },
+            "15m": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:44:50.390697"
+            },
+            "4h": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:44:50.393692"
+            },
+            "1d": {
+                "trend": "BEARISH",
+                "mode": "AUTO",
+                "last_update": "2026-01-05T04:44:50.393692"
+            }
+        },
+        "GBPJPY": {
+            "1h": {
+                "trend": "BULLISH",
+                "mode": "AUTO",
+                "last_update": "2025-10-07T19:41:43.348574"
+            },
+            "15m": {
+                "trend": "BULLISH",
+                "mode": "AUTO",
+                "last_update": "2025-10-07T19:41:44.946707"
+            }
+        }
+    },
+    "default_mode": "AUTO"
+}
