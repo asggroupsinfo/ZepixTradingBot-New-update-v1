@@ -1,0 +1,17 @@
+{
+    "plugin_id": "hello_world",
+    "version": "1.0.0",
+    "enabled": true,
+    "metadata": {
+        "name": "Hello World Example",
+        "description": "A minimal example plugin for learning the V5 architecture",
+        "author": "Zepix Team"
+    },
+    "settings": {
+        "max_lot_size": 0.1,
+        "risk_percentage": 1.0,
+        "daily_loss_limit": 100.0,
+        "supported_symbols": ["XAUUSD", "EURUSD"],
+        "entry_threshold": 7
+    }
+}
