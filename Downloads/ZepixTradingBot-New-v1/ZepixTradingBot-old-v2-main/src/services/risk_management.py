@@ -4,13 +4,40 @@ Risk Management Service - V5 Hybrid Plugin Architecture
 This service provides risk calculation and management for all plugins.
 Implements tier-based risk management for different account sizes.
 
-Part of Document 01: Project Overview - Service Layer Architecture
+Part of Document 05: Phase 3 Detailed Plan - Service API Layer
 """
 
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
+from dataclasses import dataclass, field
+from datetime import datetime, date
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PluginRiskConfig:
+    """Plugin-specific risk configuration."""
+    plugin_id: str
+    max_lot_size: float = 1.0
+    risk_percentage: float = 0.01
+    daily_loss_limit: float = 0.0
+    max_open_trades: int = 10
+    max_drawdown_pct: float = 0.10
+    enabled: bool = True
+
+
+@dataclass
+class DailyStats:
+    """Daily trading statistics for a plugin."""
+    plugin_id: str
+    date: date
+    trades_opened: int = 0
+    trades_closed: int = 0
+    total_profit: float = 0.0
+    total_loss: float = 0.0
+    max_drawdown: float = 0.0
+    open_trades: int = 0
 
 
 class RiskManagementService:
@@ -70,11 +97,72 @@ class RiskManagementService:
         self.config = config
         self.logger = logging.getLogger(f"{__name__}.RiskManagementService")
         
-        # Track daily losses per plugin
         self.daily_losses: Dict[str, float] = {}
         self.lifetime_loss: float = 0.0
+        self.plugin_configs: Dict[str, PluginRiskConfig] = {}
+        self.daily_stats: Dict[str, DailyStats] = {}
+        self.current_date: date = date.today()
         
         self.logger.info("RiskManagementService initialized")
+    
+    def register_plugin(self, plugin_id: str, config: Optional[PluginRiskConfig] = None) -> None:
+        """
+        Register a plugin with its risk configuration.
+        
+        Args:
+            plugin_id: Plugin identifier
+            config: Optional plugin-specific risk configuration
+        """
+        if config:
+            self.plugin_configs[plugin_id] = config
+        else:
+            self.plugin_configs[plugin_id] = PluginRiskConfig(plugin_id=plugin_id)
+        
+        self.daily_stats[plugin_id] = DailyStats(
+            plugin_id=plugin_id,
+            date=date.today()
+        )
+        self.logger.info(f"Registered plugin: {plugin_id}")
+    
+    def get_plugin_config(self, plugin_id: str) -> PluginRiskConfig:
+        """Get plugin-specific risk configuration."""
+        if plugin_id not in self.plugin_configs:
+            self.register_plugin(plugin_id)
+        return self.plugin_configs[plugin_id]
+    
+    def check_daily_limit(self, plugin_id: str, balance: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Check daily loss limit status for a plugin.
+        
+        Args:
+            plugin_id: Plugin identifier
+            balance: Optional account balance (uses MT5 if not provided)
+            
+        Returns:
+            dict: Daily limit status with can_trade flag
+        """
+        if balance is None:
+            balance = self.mt5_client.get_account_balance() if self.mt5_client else 10000.0
+        
+        plugin_config = self.get_plugin_config(plugin_id)
+        daily_loss = self.daily_losses.get(plugin_id, 0.0)
+        
+        if plugin_config.daily_loss_limit > 0:
+            daily_limit = plugin_config.daily_loss_limit
+        else:
+            daily_limit = balance * self.DAILY_LOSS_LIMIT_PCT
+        
+        remaining = daily_limit - daily_loss
+        can_trade = daily_loss < daily_limit
+        
+        return {
+            "plugin_id": plugin_id,
+            "daily_loss": daily_loss,
+            "daily_limit": daily_limit,
+            "remaining": remaining,
+            "can_trade": can_trade,
+            "usage_pct": (daily_loss / daily_limit * 100) if daily_limit > 0 else 0
+        }
     
     def get_account_tier(self, balance: float) -> str:
         """
