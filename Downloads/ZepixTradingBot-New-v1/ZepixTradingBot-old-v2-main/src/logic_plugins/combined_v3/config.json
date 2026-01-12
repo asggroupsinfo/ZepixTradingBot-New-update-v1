@@ -1,8 +1,9 @@
 {
   "plugin_id": "combined_v3",
   "enabled": true,
-  "description": "V3 Combined Logic - 12 signals, 3 logics, dual orders",
-  "version": "3.0.0",
+  "shadow_mode": false,
+  "description": "V3 Combined Logic - 12 signals, 3 logics, dual orders, MTF 4-pillar",
+  "version": "3.1.0",
   "author": "Zepix Team",
   
   "database": {
@@ -19,12 +20,34 @@
     "order_b_enabled": true
   },
   
+  "signal_routing": {
+    "signal_overrides": {
+      "Screener_Full_Bullish": "LOGIC3",
+      "Screener_Full_Bearish": "LOGIC3",
+      "Golden_Pocket_Flip_1H": "LOGIC3",
+      "Golden_Pocket_Flip_4H": "LOGIC3"
+    },
+    "timeframe_routing": {
+      "5": "LOGIC1",
+      "15": "LOGIC2",
+      "60": "LOGIC3",
+      "240": "LOGIC3"
+    },
+    "default_logic": "LOGIC2"
+  },
+  
+  "logic_multipliers": {
+    "LOGIC1": 1.25,
+    "LOGIC2": 1.0,
+    "LOGIC3": 0.625
+  },
+  
   "logic_settings": {
     "logic1": {
       "name": "Scalping",
       "timeframes": ["1M", "5M"],
       "sl_multiplier": 1.0,
-      "lot_multiplier": 1.0
+      "lot_multiplier": 1.25
     },
     "logic2": {
       "name": "Intraday",
@@ -36,19 +59,52 @@
       "name": "Swing",
       "timeframes": ["1H", "4H", "D1"],
       "sl_multiplier": 2.0,
-      "lot_multiplier": 0.5
+      "lot_multiplier": 0.625
     }
+  },
+  
+  "mtf_config": {
+    "pillars_only": ["15m", "1h", "4h", "1d"],
+    "ignore_timeframes": ["1m", "5m"],
+    "min_alignment": 3
+  },
+  
+  "dual_orders": {
+    "split_ratio": 0.5,
+    "order_a_comment": "OrderA_TP_Trail",
+    "order_b_comment": "OrderB_Profit_Trail",
+    "order_b_fixed_sl": 10.0
+  },
+  
+  "trend_bypass": {
+    "bypass_for_entry_v3": true,
+    "bypass_for_legacy": false,
+    "bypass_for_sl_hunt": false
   },
   
   "signal_settings": {
     "aggressive_reversal_bypass_trend": true,
     "aggressive_signals": [
+      "Liquidity_Trap",
       "Liquidity_Trap_Reversal",
       "Golden_Pocket_Flip",
+      "Golden_Pocket_Flip_1H",
+      "Golden_Pocket_Flip_4H",
       "Screener_Full_Bullish",
       "Screener_Full_Bearish"
     ]
   },
+  
+  "risk_tiers": {
+    "micro": {"min_balance": 0, "max_balance": 1000, "base_lot": 0.01},
+    "mini": {"min_balance": 1000, "max_balance": 5000, "base_lot": 0.05},
+    "standard": {"min_balance": 5000, "max_balance": 25000, "base_lot": 0.10},
+    "premium": {"min_balance": 25000, "max_balance": 100000, "base_lot": 0.25},
+    "elite": {"min_balance": 100000, "max_balance": 999999999, "base_lot": 0.50}
+  },
+  
+  "supported_symbols": ["XAUUSD", "EURUSD", "GBPUSD"],
+  "max_daily_loss": 500.0,
   
   "notification_settings": {
     "send_entry_alerts": true,
