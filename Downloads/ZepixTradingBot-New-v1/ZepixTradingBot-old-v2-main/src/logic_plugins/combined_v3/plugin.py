@@ -261,10 +261,12 @@ class CombinedV3Plugin(BaseLogicPlugin):
         Main V3 entry processing pipeline.
         
         Steps:
-        1. Determine logic route (2-tier: signal override -> TF routing)
-        2. Check trend alignment (unless bypassed)
-        3. Calculate lot size (4-step flow)
-        4. Place dual orders (Order A + Order B)
+        1. Check session restrictions (NEW - per GOLDEN TRUTH docs)
+        2. Determine logic route (2-tier: signal override -> TF routing)
+        3. Check trend alignment (unless bypassed)
+        4. Calculate lot size (4-step flow)
+        5. Place dual orders (Order A + Order B)
+        6. Announce trade via voice (NEW - per GOLDEN TRUTH docs)
         
         Args:
             alert: V3 alert data
@@ -279,6 +281,20 @@ class CombinedV3Plugin(BaseLogicPlugin):
         self.logger.info(f"V3 Entry: {symbol} {direction} [{signal_type}]")
         
         try:
+            # Step 0: Check session restrictions (NEW)
+            if self.service_api and self.service_api.sessions:
+                session_allowed = await self.service_api.check_session_allowed(symbol)
+                if not session_allowed:
+                    current_session = self.service_api.get_current_session()
+                    self.logger.info(f"V3 Entry BLOCKED: {symbol} not allowed in {current_session} session")
+                    return {
+                        "success": False,
+                        "reason": "session_restriction",
+                        "symbol": symbol,
+                        "direction": direction,
+                        "signal_type": signal_type,
+                        "session": current_session
+                    }
             # Step 1: Determine logic route (2-tier routing)
             logic_route = self.routing.determine_logic_route(alert, signal_type)
             logic_mult = self.routing.get_logic_multiplier(logic_route)
@@ -316,6 +332,39 @@ class CombinedV3Plugin(BaseLogicPlugin):
                 f"V3 Entry complete: {symbol} {direction} [{signal_type}] -> {logic_route} "
                 f"A#{order_a} B#{order_b}"
             )
+            
+            # Step 5: Announce trade via voice (NEW - per GOLDEN TRUTH docs)
+            if self.service_api and self.service_api.voice and (order_a or order_b):
+                try:
+                    entry_price = self._get_attr(alert, 'price', 0.0)
+                    await self.service_api.announce_trade(
+                        symbol=symbol,
+                        direction=direction.upper(),
+                        price=entry_price,
+                        lot_size=final_lot
+                    )
+                    self.logger.debug(f"Voice announcement sent for {symbol} {direction}")
+                except Exception as voice_err:
+                    self.logger.warning(f"Voice announcement failed: {voice_err}")
+            
+            # Step 6: Send notification (NEW - per GOLDEN TRUTH docs)
+            if self.service_api and self.service_api.notifications and (order_a or order_b):
+                try:
+                    await self.service_api.send_trade_notification(
+                        notification_type="TRADE_OPENED",
+                        data={
+                            "symbol": symbol,
+                            "direction": direction,
+                            "signal_type": signal_type,
+                            "logic_route": logic_route,
+                            "lot_size": final_lot,
+                            "order_a": order_a,
+                            "order_b": order_b
+                        },
+                        priority="HIGH"
+                    )
+                except Exception as notif_err:
+                    self.logger.warning(f"Notification failed: {notif_err}")
             
             return {
                 "success": True,

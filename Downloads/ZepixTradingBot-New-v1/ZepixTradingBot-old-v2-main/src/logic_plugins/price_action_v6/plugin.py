@@ -337,6 +337,11 @@ class PriceActionV6Plugin(BaseLogicPlugin):
         - 15M -> price_action_15m (ORDER A ONLY)
         - 1H -> price_action_1h (ORDER A ONLY)
         
+        Steps:
+        1. Check session restrictions (NEW - per GOLDEN TRUTH docs)
+        2. Route to timeframe-specific plugin
+        3. Announce trade via voice (NEW - per GOLDEN TRUTH docs)
+        
         Args:
             alert: V6 alert data (dict or object)
             
@@ -349,16 +354,34 @@ class PriceActionV6Plugin(BaseLogicPlugin):
             symbol = alert.get("symbol", "")
             direction = alert.get("direction", "")
             raw_tf = alert.get("timeframe", "15")
+            entry_price = alert.get("price", 0.0)
         else:
             alert_type = getattr(alert, "alert_type", "")
             symbol = getattr(alert, "symbol", "")
             direction = getattr(alert, "direction", "")
             raw_tf = getattr(alert, "timeframe", "15")
+            entry_price = getattr(alert, "price", 0.0)
         
         # Normalize timeframe
         timeframe = self._normalize_timeframe(raw_tf)
         
         self.logger.info(f"V6 Entry: {symbol} {direction} [{alert_type}] TF={timeframe}")
+        
+        # Step 0: Check session restrictions (NEW - per GOLDEN TRUTH docs)
+        if self.service_api and self.service_api.sessions:
+            session_allowed = await self.service_api.check_session_allowed(symbol)
+            if not session_allowed:
+                current_session = self.service_api.get_current_session()
+                self.logger.info(f"V6 Entry BLOCKED: {symbol} not allowed in {current_session} session")
+                return {
+                    "success": False,
+                    "reason": "session_restriction",
+                    "symbol": symbol,
+                    "direction": direction,
+                    "alert_type": alert_type,
+                    "timeframe": timeframe,
+                    "session": current_session
+                }
         
         # Validate timeframe
         if timeframe not in self.TIMEFRAMES:
@@ -398,8 +421,42 @@ class PriceActionV6Plugin(BaseLogicPlugin):
             self._store_trade_in_db(signal_dict, timeframe, result)
             
             tf_settings = self.TIMEFRAME_SETTINGS.get(timeframe, {})
+            is_success = result if isinstance(result, bool) else result.get("success", False)
+            
+            # Step 2: Announce trade via voice (NEW - per GOLDEN TRUTH docs)
+            if is_success and self.service_api and self.service_api.voice:
+                try:
+                    lot_size = tf_settings.get("lot_multiplier", 1.0)
+                    await self.service_api.announce_trade(
+                        symbol=symbol,
+                        direction=direction.upper() if direction else "UNKNOWN",
+                        price=entry_price,
+                        lot_size=lot_size
+                    )
+                    self.logger.debug(f"Voice announcement sent for {symbol} {direction}")
+                except Exception as voice_err:
+                    self.logger.warning(f"Voice announcement failed: {voice_err}")
+            
+            # Step 3: Send notification (NEW - per GOLDEN TRUTH docs)
+            if is_success and self.service_api and self.service_api.notifications:
+                try:
+                    await self.service_api.send_trade_notification(
+                        notification_type="TRADE_OPENED",
+                        data={
+                            "symbol": symbol,
+                            "direction": direction,
+                            "alert_type": alert_type,
+                            "timeframe": timeframe,
+                            "routed_to": f"price_action_{timeframe.lower()}",
+                            "order_type": "DUAL_ORDERS" if tf_settings.get("dual_orders") else "SINGLE_ORDER"
+                        },
+                        priority="HIGH"
+                    )
+                except Exception as notif_err:
+                    self.logger.warning(f"Notification failed: {notif_err}")
+            
             return {
-                "success": result if isinstance(result, bool) else result.get("success", False),
+                "success": is_success,
                 "plugin_id": self.plugin_id,
                 "routed_to": f"price_action_{timeframe.lower()}",
                 "alert_type": alert_type,

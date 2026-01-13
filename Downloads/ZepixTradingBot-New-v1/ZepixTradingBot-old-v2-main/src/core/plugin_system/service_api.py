@@ -51,6 +51,10 @@ class ServiceAPI:
     _profit_service = None
     _risk_service = None
     _trend_service = None
+    _voice_service = None        # NEW: Voice Alert Service
+    _session_manager = None      # NEW: Forex Session Manager
+    _notification_router = None  # NEW: Notification Router
+    _database_manager = None     # NEW: Database Manager
     _initialized = False
     
     def __init__(self, trading_engine, plugin_id: str = "core"):
@@ -133,6 +137,26 @@ class ServiceAPI:
     def trend_service(self):
         """Get TrendMonitorService instance."""
         return ServiceAPI._trend_service
+    
+    @property
+    def voice(self):
+        """Get VoiceAlertService instance."""
+        return ServiceAPI._voice_service
+    
+    @property
+    def sessions(self):
+        """Get ForexSessionManager instance."""
+        return ServiceAPI._session_manager
+    
+    @property
+    def notifications(self):
+        """Get NotificationRouter instance."""
+        return ServiceAPI._notification_router
+    
+    @property
+    def database(self):
+        """Get DatabaseManager instance."""
+        return ServiceAPI._database_manager
 
     # --- Market Data ---
 
@@ -462,6 +486,130 @@ class ServiceAPI:
             )
         return {"success": False, "error": "Profit service not available"}
     
+    # --- Session Management ---
+    
+    async def check_session_allowed(self, symbol: str) -> bool:
+        """
+        Check if trading is allowed for a symbol in the current session.
+        
+        Args:
+            symbol: Trading symbol (e.g., 'EURUSD')
+            
+        Returns:
+            bool: True if trading is allowed, False otherwise
+        """
+        if ServiceAPI._session_manager:
+            return ServiceAPI._session_manager.is_symbol_allowed(symbol)
+        return True
+    
+    def get_current_session(self) -> str:
+        """
+        Get the current forex session name.
+        
+        Returns:
+            str: Session name (e.g., 'LONDON', 'ASIAN', 'NY_LATE')
+        """
+        if ServiceAPI._session_manager:
+            return ServiceAPI._session_manager.get_current_session()
+        return "UNKNOWN"
+    
+    def get_session_allowed_symbols(self) -> list:
+        """
+        Get list of symbols allowed in current session.
+        
+        Returns:
+            list: List of allowed symbol names
+        """
+        if ServiceAPI._session_manager:
+            return ServiceAPI._session_manager.get_allowed_symbols()
+        return []
+    
+    # --- Voice Alerts ---
+    
+    async def announce_trade(self, symbol: str, direction: str, price: float, lot_size: float) -> bool:
+        """
+        Announce a trade via voice alert.
+        
+        Args:
+            symbol: Trading symbol
+            direction: 'BUY' or 'SELL'
+            price: Entry price
+            lot_size: Position size
+            
+        Returns:
+            bool: True if announcement was made
+        """
+        if ServiceAPI._voice_service:
+            return await ServiceAPI._voice_service.announce_trade(
+                symbol=symbol,
+                direction=direction,
+                price=price,
+                lot_size=lot_size
+            )
+        return False
+    
+    async def announce_sl_hit(self, symbol: str, loss_amount: float, direction: str) -> bool:
+        """
+        Announce a stop loss hit via voice alert.
+        
+        Args:
+            symbol: Trading symbol
+            loss_amount: Amount lost
+            direction: Original trade direction
+            
+        Returns:
+            bool: True if announcement was made
+        """
+        if ServiceAPI._voice_service:
+            return await ServiceAPI._voice_service.announce_sl_hit(
+                symbol=symbol,
+                loss_amount=loss_amount,
+                direction=direction
+            )
+        return False
+    
+    async def announce_tp_hit(self, symbol: str, profit_amount: float, direction: str) -> bool:
+        """
+        Announce a take profit hit via voice alert.
+        
+        Args:
+            symbol: Trading symbol
+            profit_amount: Amount gained
+            direction: Original trade direction
+            
+        Returns:
+            bool: True if announcement was made
+        """
+        if ServiceAPI._voice_service:
+            return await ServiceAPI._voice_service.announce_tp_hit(
+                symbol=symbol,
+                profit_amount=profit_amount,
+                direction=direction
+            )
+        return False
+    
+    # --- Notification System ---
+    
+    async def send_trade_notification(self, notification_type: str, data: dict, priority: str = "MEDIUM") -> bool:
+        """
+        Send a notification through the notification router.
+        
+        Args:
+            notification_type: Type of notification (e.g., 'TRADE_OPENED', 'TRADE_CLOSED')
+            data: Notification data
+            priority: Priority level ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO')
+            
+        Returns:
+            bool: True if notification was sent
+        """
+        if ServiceAPI._notification_router:
+            return await ServiceAPI._notification_router.send(
+                notification_type=notification_type,
+                data=data,
+                priority=priority
+            )
+        return False
+    
     # --- Health Monitoring ---
     
     def get_service_health(self) -> Dict[str, Any]:
@@ -509,6 +657,39 @@ class ServiceAPI:
         else:
             health["services"]["trend_monitor"] = {"status": "unavailable"}
         
+        if ServiceAPI._voice_service:
+            health["services"]["voice_alerts"] = {
+                "status": "healthy",
+                "statistics": ServiceAPI._voice_service.get_statistics()
+            }
+        else:
+            health["services"]["voice_alerts"] = {"status": "unavailable"}
+        
+        if ServiceAPI._session_manager:
+            health["services"]["session_manager"] = {
+                "status": "healthy",
+                "current_session": ServiceAPI._session_manager.get_current_session(),
+                "allowed_symbols": ServiceAPI._session_manager.get_allowed_symbols()
+            }
+        else:
+            health["services"]["session_manager"] = {"status": "unavailable"}
+        
+        if ServiceAPI._notification_router:
+            health["services"]["notifications"] = {
+                "status": "healthy",
+                "statistics": ServiceAPI._notification_router.get_statistics()
+            }
+        else:
+            health["services"]["notifications"] = {"status": "unavailable"}
+        
+        if ServiceAPI._database_manager:
+            health["services"]["database"] = {
+                "status": "healthy",
+                "health_check": ServiceAPI._database_manager.health_check()
+            }
+        else:
+            health["services"]["database"] = {"status": "unavailable"}
+        
         return health
     
     def get_plugin_statistics(self) -> Dict[str, Any]:
@@ -541,4 +722,8 @@ class ServiceAPI:
         cls._profit_service = None
         cls._risk_service = None
         cls._trend_service = None
+        cls._voice_service = None
+        cls._session_manager = None
+        cls._notification_router = None
+        cls._database_manager = None
         cls._initialized = False
