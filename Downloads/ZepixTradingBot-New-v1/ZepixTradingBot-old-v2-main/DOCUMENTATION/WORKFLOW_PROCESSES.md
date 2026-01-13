@@ -1,8 +1,161 @@
-# Zepix Trading Bot v2.0 - Workflow Processes
+# Zepix Trading Bot v5.0 - Workflow Processes
 
 ## Overview
 
 This document details the complete workflow processes within the Zepix Trading Bot, including signal processing, trade execution, profit booking, re-entry systems, and state management.
+
+## V5 Signal → Order → Notification Flow (NEW)
+
+The V5 architecture introduces a unified signal processing flow that routes alerts through the plugin system:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    V5 COMPLETE SIGNAL FLOW                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────┐                                                                │
+│  │ TradingView │                                                                │
+│  │   Alert     │                                                                │
+│  └──────┬──────┘                                                                │
+│         │                                                                       │
+│         ▼                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      WEBHOOK RECEIVER                                    │   │
+│  │                    POST /webhook                                         │   │
+│  │                                                                          │   │
+│  │  1. Parse JSON payload                                                   │   │
+│  │  2. Validate required fields (type, symbol, signal, tf)                 │   │
+│  │  3. Check for duplicates (5-minute window)                              │   │
+│  │  4. Route to appropriate handler                                         │   │
+│  └──────────────────────────────┬──────────────────────────────────────────┘   │
+│                                 │                                               │
+│                                 ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      PLUGIN REGISTRY                                     │   │
+│  │                                                                          │   │
+│  │  Route by alert source:                                                  │   │
+│  │  - V3 Combined Logic alerts → combined_v3 plugin                        │   │
+│  │  - V6 1M Price Action → price_action_1m plugin                          │   │
+│  │  - V6 5M Price Action → price_action_5m plugin                          │   │
+│  │  - V6 15M Price Action → price_action_15m plugin                        │   │
+│  │  - V6 1H Price Action → price_action_1h plugin                          │   │
+│  │  - Trend Pulse alerts → Update market_trends table                      │   │
+│  └──────────────────────────────┬──────────────────────────────────────────┘   │
+│                                 │                                               │
+│         ┌───────────────────────┼───────────────────────────────┐              │
+│         │                       │                               │              │
+│         ▼                       ▼                               ▼              │
+│  ┌─────────────┐         ┌─────────────┐                 ┌─────────────┐       │
+│  │    V3       │         │    V6       │                 │   Trend     │       │
+│  │  Combined   │         │ Price Action│                 │   Pulse     │       │
+│  │   Plugin    │         │   Plugins   │                 │   Update    │       │
+│  └──────┬──────┘         └──────┬──────┘                 └─────────────┘       │
+│         │                       │                                               │
+│         ▼                       ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      SERVICE API LAYER                                   │   │
+│  │                                                                          │   │
+│  │  1. RiskManagementService.check_daily_limit()                           │   │
+│  │  2. RiskManagementService.calculate_lot_size()                          │   │
+│  │  3. TrendManagementService.validate_trend_alignment()                   │   │
+│  │  4. MarketDataService.get_current_spread()                              │   │
+│  └──────────────────────────────┬──────────────────────────────────────────┘   │
+│                                 │                                               │
+│                                 ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      ORDER EXECUTION                                     │   │
+│  │                                                                          │   │
+│  │  V3 Combined Logic:                                                      │   │
+│  │  ├─ place_dual_orders_v3() → Order A (Smart SL) + Order B (Fixed $10)   │   │
+│  │  └─ DIFFERENT SL for each order                                         │   │
+│  │                                                                          │   │
+│  │  V6 1M Plugin:                                                           │   │
+│  │  └─ place_single_order_b() → Order B ONLY (quick scalp)                 │   │
+│  │                                                                          │   │
+│  │  V6 5M Plugin:                                                           │   │
+│  │  └─ place_dual_orders_v6() → Order A + Order B (SAME SL)                │   │
+│  │                                                                          │   │
+│  │  V6 15M/1H Plugin:                                                       │   │
+│  │  └─ place_single_order_a() → Order A ONLY (swing trade)                 │   │
+│  └──────────────────────────────┬──────────────────────────────────────────┘   │
+│                                 │                                               │
+│                                 ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      DATABASE OPERATIONS                                 │   │
+│  │                                                                          │   │
+│  │  Per-Plugin Isolation:                                                   │   │
+│  │  ├─ combined_v3 → data/plugins/combined_v3/zepix_v3.db                  │   │
+│  │  ├─ price_action_1m → data/plugins/price_action_1m/zepix_1m.db          │   │
+│  │  ├─ price_action_5m → data/plugins/price_action_5m/zepix_5m.db          │   │
+│  │  ├─ price_action_15m → data/plugins/price_action_15m/zepix_15m.db       │   │
+│  │  └─ price_action_1h → data/plugins/price_action_1h/zepix_1h.db          │   │
+│  │                                                                          │   │
+│  │  Tables: trades, orders, profit_chains, reentry_chains, sl_events       │   │
+│  └──────────────────────────────┬──────────────────────────────────────────┘   │
+│                                 │                                               │
+│                                 ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      NOTIFICATION SYSTEM                                 │   │
+│  │                                                                          │   │
+│  │  1. NotificationRouter.route_notification()                             │   │
+│  │     ├─ Determine notification type (TRADE, SIGNAL, ERROR, REPORT)       │   │
+│  │     └─ Select target bot                                                 │   │
+│  │                                                                          │   │
+│  │  2. NotificationFormatter.format_message()                              │   │
+│  │     ├─ Apply template for notification type                             │   │
+│  │     └─ Include trade details, P&L, timestamps                           │   │
+│  │                                                                          │   │
+│  │  3. DeliveryManager.deliver()                                           │   │
+│  │     ├─ Add to priority queue                                            │   │
+│  │     ├─ Apply rate limiting (30 msg/sec global)                          │   │
+│  │     └─ Retry on failure (3 attempts)                                    │   │
+│  │                                                                          │   │
+│  │  4. VoiceAlertEngine.speak() (if enabled)                               │   │
+│  │     ├─ Generate TTS audio                                               │   │
+│  │     └─ Send voice message to Notification Bot                           │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                 │                                               │
+│         ┌───────────────────────┼───────────────────────────────┐              │
+│         │                       │                               │              │
+│         ▼                       ▼                               ▼              │
+│  ┌─────────────┐         ┌─────────────┐                 ┌─────────────┐       │
+│  │ Controller  │         │ Notification│                 │  Analytics  │       │
+│  │    Bot      │         │    Bot      │                 │    Bot      │       │
+│  │             │         │             │                 │             │       │
+│  │ Status Msg  │         │ Trade Alert │                 │ Daily Report│       │
+│  │ Menu Update │         │ Voice Alert │                 │ P&L Summary │       │
+│  └─────────────┘         └─────────────┘                 └─────────────┘       │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### V5 Notification Types
+
+| Type | Target Bot | Priority | Voice Alert |
+|------|------------|----------|-------------|
+| TRADE_ENTRY | Notification | HIGH | Yes |
+| TRADE_EXIT | Notification | HIGH | Yes |
+| SL_HIT | Notification | CRITICAL | Yes |
+| TP_HIT | Notification | HIGH | Yes |
+| SIGNAL_RECEIVED | Notification | NORMAL | No |
+| ERROR | Controller | CRITICAL | Yes |
+| DAILY_REPORT | Analytics | LOW | No |
+| PLUGIN_STATUS | Controller | NORMAL | No |
+
+### V5 Rate Limiting
+
+The notification system implements multi-level rate limiting:
+
+| Level | Limit | Window |
+|-------|-------|--------|
+| Global | 30 messages | 1 second |
+| Per Bot | 20 messages | 1 second |
+| Per User | 1 message | 1 second |
+| Burst | 5 messages | 100ms |
+
+---
+
+## Legacy Workflow (v2.0)
 
 ## 1. Application Startup Workflow
 

@@ -1,8 +1,248 @@
-# Zepix Trading Bot v2.0 - Configuration & Setup Guide
+# Zepix Trading Bot v5.0 - Configuration & Setup Guide
 
 ## Overview
 
-This document provides comprehensive instructions for setting up and configuring the Zepix Trading Bot v2.0. It covers environment setup, configuration files, and all configurable parameters.
+This document provides comprehensive instructions for setting up and configuring the Zepix Trading Bot v5.0. It covers environment setup, configuration files, and all configurable parameters including the new V5 Hybrid Plugin Architecture settings.
+
+## V5 Plugin Configuration (NEW)
+
+The V5 architecture introduces plugin-specific configuration with hot-reload support.
+
+### Plugin Registry Configuration
+
+```json
+{
+    "plugin_registry": {
+        "enabled_plugins": ["combined_v3", "price_action_1m", "price_action_5m", "price_action_15m", "price_action_1h"],
+        "auto_discovery": true,
+        "plugin_directory": "src/plugins",
+        "config_hot_reload": true,
+        "reload_interval_seconds": 30
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled_plugins` | array | all | List of plugins to load at startup |
+| `auto_discovery` | bool | true | Automatically discover plugins in directory |
+| `plugin_directory` | string | "src/plugins" | Path to plugin modules |
+| `config_hot_reload` | bool | true | Enable runtime config changes without restart |
+| `reload_interval_seconds` | int | 30 | How often to check for config changes |
+
+### V6 Price Action Plugin Configuration
+
+```json
+{
+    "v6_config": {
+        "trend_pulse": {
+            "enabled": true,
+            "bull_threshold": 3,
+            "bear_threshold": 3,
+            "sideways_threshold": 2,
+            "decay_minutes": 60
+        },
+        "market_states": {
+            "TRENDING_BULLISH": {"min_bull_count": 3, "max_bear_count": 1},
+            "TRENDING_BEARISH": {"min_bear_count": 3, "max_bull_count": 1},
+            "SIDEWAYS": {"max_diff": 1},
+            "VOLATILE": {"min_total": 5}
+        },
+        "conflict_resolution": {
+            "strategy": "HIGHER_TIMEFRAME_WINS",
+            "cooldown_seconds": 300
+        }
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `trend_pulse.enabled` | bool | true | Enable Trend Pulse signal processing |
+| `trend_pulse.bull_threshold` | int | 3 | Bull count needed for bullish state |
+| `trend_pulse.bear_threshold` | int | 3 | Bear count needed for bearish state |
+| `trend_pulse.sideways_threshold` | int | 2 | Max diff for sideways market |
+| `trend_pulse.decay_minutes` | int | 60 | Time before pulse counts decay |
+| `conflict_resolution.strategy` | string | "HIGHER_TIMEFRAME_WINS" | How to resolve conflicting signals |
+| `conflict_resolution.cooldown_seconds` | int | 300 | Cooldown between conflicting trades |
+
+### Per-Plugin Database Configuration
+
+```json
+{
+    "database_config": {
+        "isolation_mode": "PER_PLUGIN",
+        "base_path": "data/plugins",
+        "sync_enabled": true,
+        "backup_interval_hours": 24,
+        "max_backup_count": 7
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `isolation_mode` | string | "PER_PLUGIN" | Database isolation strategy |
+| `base_path` | string | "data/plugins" | Base directory for plugin databases |
+| `sync_enabled` | bool | true | Enable cross-plugin data sync |
+| `backup_interval_hours` | int | 24 | Automatic backup frequency |
+| `max_backup_count` | int | 7 | Number of backups to retain |
+
+### Multi-Bot Telegram Configuration (NEW)
+
+```json
+{
+    "telegram_multi_bot": {
+        "controller_bot": {
+            "token": "YOUR_CONTROLLER_BOT_TOKEN",
+            "enabled": true,
+            "admin_users": [123456789],
+            "commands_enabled": true
+        },
+        "notification_bot": {
+            "token": "YOUR_NOTIFICATION_BOT_TOKEN",
+            "enabled": true,
+            "voice_alerts": true,
+            "alert_types": ["TRADE_ENTRY", "TRADE_EXIT", "SL_HIT", "TP_HIT"]
+        },
+        "analytics_bot": {
+            "token": "YOUR_ANALYTICS_BOT_TOKEN",
+            "enabled": true,
+            "daily_report_time": "18:00",
+            "timezone": "Asia/Kolkata"
+        }
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `controller_bot.token` | string | required | Telegram bot token for Controller Bot |
+| `controller_bot.admin_users` | array | [] | User IDs with admin privileges |
+| `notification_bot.voice_alerts` | bool | true | Enable TTS voice notifications |
+| `notification_bot.alert_types` | array | all | Which alerts to send |
+| `analytics_bot.daily_report_time` | string | "18:00" | Time to send daily report (HH:MM) |
+| `analytics_bot.timezone` | string | "Asia/Kolkata" | Timezone for scheduled reports |
+
+### User Session Configuration (NEW)
+
+```json
+{
+    "session_config": {
+        "enabled": true,
+        "timeout_minutes": 30,
+        "persist_to_disk": true,
+        "storage_path": "data/sessions",
+        "max_sessions_per_user": 1,
+        "cleanup_interval_minutes": 5
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Enable user session management |
+| `timeout_minutes` | int | 30 | Session timeout for inactivity |
+| `persist_to_disk` | bool | true | Save sessions across restarts |
+| `storage_path` | string | "data/sessions" | Directory for session files |
+| `max_sessions_per_user` | int | 1 | Maximum concurrent sessions |
+| `cleanup_interval_minutes` | int | 5 | How often to clean expired sessions |
+
+### Voice Alert Configuration (NEW)
+
+```json
+{
+    "voice_alerts": {
+        "enabled": true,
+        "engine": "gtts",
+        "language": "en",
+        "speed": 1.0,
+        "alert_types": {
+            "TRADE_ENTRY": true,
+            "TRADE_EXIT": true,
+            "SL_HIT": true,
+            "TP_HIT": true,
+            "ERROR": true
+        },
+        "quiet_hours": {
+            "enabled": false,
+            "start": "22:00",
+            "end": "08:00"
+        }
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Master switch for voice alerts |
+| `engine` | string | "gtts" | TTS engine (gtts, pyttsx3) |
+| `language` | string | "en" | Voice language code |
+| `speed` | float | 1.0 | Speech speed multiplier |
+| `alert_types.*` | bool | true | Enable/disable specific alert types |
+| `quiet_hours.enabled` | bool | false | Disable voice during quiet hours |
+| `quiet_hours.start` | string | "22:00" | Quiet hours start time |
+| `quiet_hours.end` | string | "08:00" | Quiet hours end time |
+
+### Rate Limiting Configuration (NEW)
+
+```json
+{
+    "rate_limiting": {
+        "enabled": true,
+        "global_limit": 30,
+        "per_bot_limit": 20,
+        "per_user_limit": 1,
+        "burst_limit": 5,
+        "window_seconds": 1,
+        "retry_attempts": 3,
+        "retry_delay_seconds": 1
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Enable rate limiting |
+| `global_limit` | int | 30 | Max messages per second globally |
+| `per_bot_limit` | int | 20 | Max messages per second per bot |
+| `per_user_limit` | int | 1 | Max messages per second per user |
+| `burst_limit` | int | 5 | Max burst messages in 100ms |
+| `retry_attempts` | int | 3 | Retry count on rate limit hit |
+| `retry_delay_seconds` | int | 1 | Delay between retries |
+
+### Health Monitoring Configuration (NEW)
+
+```json
+{
+    "health_monitoring": {
+        "enabled": true,
+        "heartbeat_interval_seconds": 30,
+        "error_threshold": 5,
+        "circuit_breaker": {
+            "enabled": true,
+            "failure_threshold": 3,
+            "recovery_timeout_seconds": 60,
+            "half_open_requests": 1
+        },
+        "alerts": {
+            "telegram_enabled": true,
+            "email_enabled": false
+        }
+    }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `heartbeat_interval_seconds` | int | 30 | Plugin health check frequency |
+| `error_threshold` | int | 5 | Errors before marking unhealthy |
+| `circuit_breaker.failure_threshold` | int | 3 | Failures before opening circuit |
+| `circuit_breaker.recovery_timeout_seconds` | int | 60 | Time before attempting recovery |
+
+---
+
+## Legacy Configuration (v2.0)
 
 ## Prerequisites
 

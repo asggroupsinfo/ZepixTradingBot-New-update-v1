@@ -1,10 +1,61 @@
-# Zepix Trading Bot v2.0 - Project Overview
+# Zepix Trading Bot v5.0 - Project Overview
 
 ## Executive Summary
 
-Zepix Trading Bot v2.0 is a sophisticated automated trading system designed for MetaTrader 5 (MT5) integration. The bot receives trading signals from TradingView via webhooks and executes trades automatically on MT5, with comprehensive risk management, profit booking systems, and Telegram-based control interface.
+Zepix Trading Bot v5.0 is a sophisticated automated trading system designed for MetaTrader 5 (MT5) integration. The bot receives trading signals from TradingView via webhooks and executes trades automatically on MT5, with comprehensive risk management, profit booking systems, and a multi-bot Telegram control interface.
 
-The system is built on FastAPI for webhook handling, uses SQLite for trade history persistence, and implements an advanced dual-order system with pyramid profit booking chains. It supports multi-timeframe analysis across 10 major forex pairs and gold (XAUUSD).
+The system is built on the V5 Hybrid Plugin Architecture that unifies V3 (Combined Logic), V6 (Price Action), and V18+ (Trend Pulse) systems. It uses FastAPI for webhook handling, SQLite for trade history persistence with per-plugin database isolation, and implements an advanced dual-order system with pyramid profit booking chains. It supports multi-timeframe analysis across 10 major forex pairs and gold (XAUUSD).
+
+## V5 Hybrid Plugin Architecture (NEW)
+
+The V5 architecture introduces a unified plugin system that integrates multiple trading strategies:
+
+### Plugin System Overview
+
+| Plugin | Timeframe | Order Type | Description |
+|--------|-----------|------------|-------------|
+| combined_v3 | 5m/15m/1h | Dual (A+B) | V3 Combined Logic with different SL per order |
+| price_action_1m | 1M | Order B Only | V6 scalping with quick exits |
+| price_action_5m | 5M | Dual (A+B) | V6 balanced with same SL |
+| price_action_15m | 15M | Order A Only | V6 intraday swing |
+| price_action_1h | 1H | Order A Only | V6 position trading |
+
+### V6 Price Action System
+
+The V6 system uses Trend Pulse alerts from TradingView to determine market state:
+
+- **Trend Pulse Counts**: Bull count vs Bear count determines market bias
+- **Market States**: TRENDING_BULLISH, TRENDING_BEARISH, SIDEWAYS, VOLATILE
+- **Timeframe-Specific Orders**: Different order types based on timeframe volatility
+
+### User Session Management (NEW)
+
+The system now includes comprehensive user session management:
+
+- **Session Persistence**: User preferences saved across bot restarts
+- **Per-User Settings**: Individual configuration for each Telegram user
+- **Session Timeout**: Automatic cleanup of inactive sessions
+- **State Tracking**: Current menu, pending inputs, and wizard states
+
+### Voice Alert System (NEW)
+
+Real-time voice notifications for critical trading events:
+
+- **Trade Entry Alerts**: "BUY XAUUSD at 2030.50"
+- **Trade Exit Alerts**: "Position closed with profit 25 pips"
+- **SL/TP Hit Alerts**: "Stop loss triggered on EURUSD"
+- **Error Alerts**: Critical system errors announced
+- **Configurable**: Enable/disable per alert type
+
+### Multi-Bot Telegram System (NEW)
+
+Three specialized bots working together:
+
+| Bot | Purpose | Features |
+|-----|---------|----------|
+| Controller Bot | Commands & Settings | Menu system, configuration, admin |
+| Notification Bot | Trade Alerts | Entry/exit alerts, voice alerts, signals |
+| Analytics Bot | Performance Reports | Daily reports, P&L charts, statistics |
 
 ## Project Purpose and Goals
 

@@ -1,8 +1,201 @@
-# Zepix Trading Bot v2.0 - Technical Architecture
+# Zepix Trading Bot v5.0 - Technical Architecture
 
 ## System Design Overview
 
-The Zepix Trading Bot v2.0 follows a modular, event-driven architecture designed for reliability, maintainability, and scalability. The system is built around a central Trading Engine that orchestrates all trading operations, with specialized managers handling specific domains like risk, profit booking, and re-entry logic.
+The Zepix Trading Bot v5.0 follows a modular, event-driven architecture designed for reliability, maintainability, and scalability. The system is built around the V5 Hybrid Plugin Architecture that unifies V3 (Combined Logic), V6 (Price Action), and V18+ (Trend Pulse) systems into a single cohesive platform.
+
+## V5 Hybrid Plugin Architecture (NEW)
+
+The V5 architecture introduces a plugin-based system with complete isolation between trading strategies:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         V5 HYBRID PLUGIN ARCHITECTURE                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        PLUGIN REGISTRY                                   │   │
+│  │                   (src/core/plugin_system/)                              │   │
+│  │                                                                          │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │   │
+│  │  │ combined_v3 │  │price_action │  │price_action │  │price_action │    │   │
+│  │  │   Plugin    │  │  _1m Plugin │  │ _15m Plugin │  │  _1h Plugin │    │   │
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘    │   │
+│  │         │                │                │                │           │   │
+│  │         ▼                ▼                ▼                ▼           │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │   │
+│  │  │zepix_v3.db  │  │zepix_1m.db  │  │zepix_15m.db │  │zepix_1h.db  │    │   │
+│  │  │(Isolated DB)│  │(Isolated DB)│  │(Isolated DB)│  │(Isolated DB)│    │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                      │                                          │
+│                                      ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                          SERVICE API LAYER                               │   │
+│  │                        (src/services/)                                   │   │
+│  │                                                                          │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │   │
+│  │  │   Order      │  │    Risk      │  │   Trend      │  │   Profit     │ │   │
+│  │  │  Execution   │  │  Management  │  │   Monitor    │  │   Booking    │ │   │
+│  │  │   Service    │  │   Service    │  │   Service    │  │   Service    │ │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘ │   │
+│  │                                                                          │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                   │   │
+│  │  │   Market     │  │   Session    │  │  Notification│                   │   │
+│  │  │    Data      │  │   Manager    │  │   Router     │                   │   │
+│  │  │   Service    │  │   Service    │  │   Service    │                   │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘                   │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### V5 Multi-Bot Telegram System
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         MULTI-BOT TELEGRAM SYSTEM                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        BOT ORCHESTRATOR                                  │   │
+│  │                   (src/telegram/bot_orchestrator.py)                     │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                      │                                          │
+│              ┌───────────────────────┼───────────────────────┐                 │
+│              │                       │                       │                 │
+│              ▼                       ▼                       ▼                 │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐          │
+│  │  CONTROLLER     │     │  NOTIFICATION   │     │   ANALYTICS     │          │
+│  │     BOT         │     │      BOT        │     │      BOT        │          │
+│  │                 │     │                 │     │                 │          │
+│  │  - Commands     │     │  - Trade Alerts │     │  - Daily Report │          │
+│  │  - Menu System  │     │  - Signal Alerts│     │  - Win Rate     │          │
+│  │  - Settings     │     │  - Voice Alerts │     │  - P&L Charts   │          │
+│  │  - Admin        │     │  - Error Alerts │     │  - Plugin Stats │          │
+│  └─────────────────┘     └─────────────────┘     └─────────────────┘          │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        UNIFIED INTERFACE                                 │   │
+│  │                   (src/telegram/unified_interface.py)                    │   │
+│  │                                                                          │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │   │
+│  │  │ Menu Builder │  │   Callback   │  │    Input     │  │    Live      │ │   │
+│  │  │  (9 Menus)   │  │   Handler    │  │   Wizard     │  │   Header     │ │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘ │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### V5 Notification System
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         NOTIFICATION SYSTEM                                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      NOTIFICATION ROUTER                                 │   │
+│  │                 (src/notifications/router.py)                            │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                      │                                          │
+│              ┌───────────────────────┼───────────────────────┐                 │
+│              │                       │                       │                 │
+│              ▼                       ▼                       ▼                 │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐          │
+│  │   FORMATTER     │     │    DELIVERY     │     │     VOICE       │          │
+│  │                 │     │    MANAGER      │     │    ALERTS       │          │
+│  │  - Trade Format │     │  - Priority Q   │     │  - TTS Engine   │          │
+│  │  - Signal Format│     │  - Rate Limit   │     │  - Entry/Exit   │          │
+│  │  - Report Format│     │  - Retry Logic  │     │  - SL/TP Alerts │          │
+│  └─────────────────┘     └─────────────────┘     └─────────────────┘          │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                      USER PREFERENCES                                    │   │
+│  │                 (src/notifications/preferences.py)                       │   │
+│  │                                                                          │   │
+│  │  - Alert Types (Trade, Signal, Error, Report)                           │   │
+│  │  - Voice Alert Settings                                                  │   │
+│  │  - Priority Levels (LOW, NORMAL, HIGH, CRITICAL)                        │   │
+│  │  - Quiet Hours Configuration                                             │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### V5 Signal Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              V5 SIGNAL FLOW                                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  TradingView Alert                                                              │
+│        │                                                                        │
+│        ▼                                                                        │
+│  ┌─────────────┐                                                                │
+│  │  Webhook    │ ──────────────────────────────────────────────────────────┐   │
+│  │  Receiver   │                                                            │   │
+│  └──────┬──────┘                                                            │   │
+│         │                                                                   │   │
+│         ▼                                                                   │   │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                   │   │
+│  │   Alert     │────▶│   Plugin    │────▶│   Service   │                   │   │
+│  │  Processor  │     │  Registry   │     │    API      │                   │   │
+│  └─────────────┘     └──────┬──────┘     └──────┬──────┘                   │   │
+│                             │                   │                           │   │
+│         ┌───────────────────┼───────────────────┘                           │   │
+│         │                   │                                               │   │
+│         ▼                   ▼                                               │   │
+│  ┌─────────────┐     ┌─────────────┐                                       │   │
+│  │    V3       │     │    V6       │                                       │   │
+│  │  Combined   │     │ Price Action│                                       │   │
+│  │   Plugin    │     │   Plugins   │                                       │   │
+│  └──────┬──────┘     └──────┬──────┘                                       │   │
+│         │                   │                                               │   │
+│         └─────────┬─────────┘                                               │   │
+│                   │                                                         │   │
+│                   ▼                                                         │   │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │   │
+│  │                      ORDER EXECUTION                                 │   │   │
+│  │                                                                      │   │   │
+│  │  V3: Dual Orders (Order A + Order B with DIFFERENT SL)              │   │   │
+│  │  V6 1M: Order B ONLY                                                 │   │   │
+│  │  V6 5M: Dual Orders (Order A + Order B with SAME SL)                │   │   │
+│  │  V6 15M/1H: Order A ONLY                                            │   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │   │
+│                   │                                                         │   │
+│                   ▼                                                         │   │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │   │
+│  │                      NOTIFICATION                                    │   │   │
+│  │                                                                      │   │   │
+│  │  Controller Bot ◄── Status Updates                                  │   │   │
+│  │  Notification Bot ◄── Trade Alerts + Voice                          │   │   │
+│  │  Analytics Bot ◄── Performance Reports                              │   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │   │
+│                                                                             │   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### V5 Code Statistics
+
+| Component | Files | Classes | Functions |
+|-----------|-------|---------|-----------|
+| Core | 12 | 76 | 284 |
+| Services | 11 | 37 | 131 |
+| Telegram | 19 | 113 | 408 |
+| Notifications | 8 | 46 | 180 |
+| Logic Plugins | 27 | 52 | 175 |
+| V6 Integration | 4 | 24 | 75 |
+| API | 7 | 54 | 106 |
+| **Total** | **173** | **654** | **2,603** |
+
+---
+
+## Legacy Architecture (v2.0)
+
+The following sections describe the original v2.0 architecture which has been enhanced by the V5 Hybrid Plugin Architecture above.
 
 ## Architecture Diagram
 
