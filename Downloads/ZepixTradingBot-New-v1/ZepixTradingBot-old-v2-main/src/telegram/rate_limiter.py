@@ -9,16 +9,168 @@ Telegram API Limits:
 - 429 Too Many Requests error on violation
 
 Part of Document 04: Phase 2 Detailed Plan - Multi-Telegram System
+Enhanced by Document 22: Telegram Rate Limiting System
+- Token Bucket Algorithm for burst handling
+- Exponential Backoff for 429 errors
+- Queue Monitor Watchdog
+- Multi-Bot Coordination
 """
 
 import asyncio
+import time
+import random
 from collections import deque
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, Callable, Deque
+from typing import Optional, Dict, Any, Callable, Deque, List
 from enum import Enum
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class RateLimitError(Exception):
+    """Raised when rate limit is exceeded."""
+    
+    def __init__(self, message: str, retry_after: float = 0):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+@dataclass
+class TokenBucket:
+    """
+    Token Bucket Algorithm for precise rate limiting with burst handling.
+    
+    The bucket fills with tokens at a constant rate (refill_rate tokens/second).
+    Each message consumes one token. If no tokens available, message must wait.
+    Allows bursts up to bucket capacity while maintaining average rate.
+    
+    Attributes:
+        capacity: Maximum tokens the bucket can hold (burst size)
+        refill_rate: Tokens added per second
+        tokens: Current token count
+        last_refill: Timestamp of last refill
+    """
+    capacity: float = 30.0
+    refill_rate: float = 0.5
+    tokens: float = field(default=30.0)
+    last_refill: float = field(default_factory=time.time)
+    
+    def _refill(self):
+        """Refill tokens based on elapsed time."""
+        now = time.time()
+        elapsed = now - self.last_refill
+        tokens_to_add = elapsed * self.refill_rate
+        self.tokens = min(self.capacity, self.tokens + tokens_to_add)
+        self.last_refill = now
+    
+    def consume(self, tokens: float = 1.0) -> bool:
+        """
+        Try to consume tokens from the bucket.
+        
+        Args:
+            tokens: Number of tokens to consume
+            
+        Returns:
+            True if tokens consumed, False if not enough tokens
+        """
+        self._refill()
+        if self.tokens >= tokens:
+            self.tokens -= tokens
+            return True
+        return False
+    
+    def wait_time(self, tokens: float = 1.0) -> float:
+        """
+        Calculate time to wait for tokens to be available.
+        
+        Args:
+            tokens: Number of tokens needed
+            
+        Returns:
+            Seconds to wait (0 if tokens available now)
+        """
+        self._refill()
+        if self.tokens >= tokens:
+            return 0.0
+        tokens_needed = tokens - self.tokens
+        return tokens_needed / self.refill_rate
+    
+    def get_available_tokens(self) -> float:
+        """Get current available tokens."""
+        self._refill()
+        return self.tokens
+
+
+@dataclass
+class ExponentialBackoff:
+    """
+    Exponential Backoff for handling 429 Too Many Requests errors.
+    
+    Implements exponential backoff with jitter for retry logic.
+    Each consecutive failure doubles the wait time up to max_delay.
+    
+    Attributes:
+        base_delay: Initial delay in seconds
+        max_delay: Maximum delay in seconds
+        multiplier: Delay multiplier per attempt
+        jitter: Random jitter factor (0-1)
+        current_attempt: Current attempt number
+        last_attempt_time: Timestamp of last attempt
+    """
+    base_delay: float = 1.0
+    max_delay: float = 60.0
+    multiplier: float = 2.0
+    jitter: float = 0.1
+    current_attempt: int = 0
+    last_attempt_time: float = field(default_factory=time.time)
+    
+    def get_delay(self) -> float:
+        """
+        Calculate delay for current attempt with jitter.
+        
+        Returns:
+            Delay in seconds
+        """
+        if self.current_attempt == 0:
+            return 0.0
+        
+        delay = self.base_delay * (self.multiplier ** (self.current_attempt - 1))
+        delay = min(delay, self.max_delay)
+        
+        jitter_range = delay * self.jitter
+        delay += random.uniform(-jitter_range, jitter_range)
+        
+        return max(0.0, delay)
+    
+    def record_failure(self):
+        """Record a failed attempt."""
+        self.current_attempt += 1
+        self.last_attempt_time = time.time()
+    
+    def record_success(self):
+        """Record a successful attempt, reset backoff."""
+        self.current_attempt = 0
+        self.last_attempt_time = time.time()
+    
+    def should_retry(self, max_attempts: int = 5) -> bool:
+        """
+        Check if should retry based on attempt count.
+        
+        Args:
+            max_attempts: Maximum retry attempts
+            
+        Returns:
+            True if should retry
+        """
+        return self.current_attempt < max_attempts
+    
+    async def wait(self):
+        """Wait for the calculated delay."""
+        delay = self.get_delay()
+        if delay > 0:
+            await asyncio.sleep(delay)
 
 
 class MessagePriority(Enum):
@@ -488,3 +640,464 @@ class RateLimitMonitor:
             health["bots"][bot_name] = bot_health
         
         return health
+
+
+class QueueWatchdog:
+    """
+    Async watchdog to monitor queue health and alert on issues.
+    
+    Features:
+    - Periodic health checks
+    - Automatic alerts when queues back up
+    - Callback support for custom alert handling
+    
+    Usage:
+        watchdog = QueueWatchdog(limiters, alert_callback=my_alert_func)
+        await watchdog.start()
+        # ... later ...
+        await watchdog.stop()
+    """
+    
+    def __init__(
+        self,
+        limiters: Dict[str, "TelegramRateLimiter"],
+        check_interval: float = 5.0,
+        warning_threshold: int = 70,
+        critical_threshold: int = 90,
+        alert_callback: Optional[Callable] = None
+    ):
+        """
+        Initialize watchdog.
+        
+        Args:
+            limiters: Dictionary of bot_name -> TelegramRateLimiter
+            check_interval: Seconds between health checks
+            warning_threshold: Queue % to trigger warning
+            critical_threshold: Queue % to trigger critical alert
+            alert_callback: Async function to call on alerts
+        """
+        self.limiters = limiters
+        self.check_interval = check_interval
+        self.warning_threshold = warning_threshold
+        self.critical_threshold = critical_threshold
+        self.alert_callback = alert_callback
+        
+        self._running = False
+        self._task: Optional[asyncio.Task] = None
+        self._monitor = RateLimitMonitor(warning_threshold, critical_threshold)
+        
+        self.stats = {
+            "checks_performed": 0,
+            "warnings_issued": 0,
+            "critical_alerts": 0,
+            "last_check_time": None,
+            "last_status": "unknown"
+        }
+        
+        self.logger = logging.getLogger(f"{__name__}.QueueWatchdog")
+    
+    async def start(self):
+        """Start the watchdog monitoring loop."""
+        if self._running:
+            self.logger.warning("QueueWatchdog already running")
+            return
+        
+        self._running = True
+        self._task = asyncio.create_task(self._monitor_loop())
+        self.logger.info(f"QueueWatchdog started (interval: {self.check_interval}s)")
+    
+    async def stop(self):
+        """Stop the watchdog monitoring loop."""
+        self._running = False
+        
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            self._task = None
+        
+        self.logger.info("QueueWatchdog stopped")
+    
+    async def _monitor_loop(self):
+        """Main monitoring loop."""
+        while self._running:
+            try:
+                await self._check_health()
+                await asyncio.sleep(self.check_interval)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error(f"Error in watchdog loop: {e}")
+                await asyncio.sleep(self.check_interval)
+    
+    async def _check_health(self):
+        """Perform health check and issue alerts if needed."""
+        self.stats["checks_performed"] += 1
+        self.stats["last_check_time"] = datetime.now().isoformat()
+        
+        health = self._monitor.check_health(self.limiters)
+        self.stats["last_status"] = health["status"]
+        
+        if health["status"] == "warning":
+            self.stats["warnings_issued"] += 1
+            await self._issue_alert("warning", health)
+        elif health["status"] == "critical":
+            self.stats["critical_alerts"] += 1
+            await self._issue_alert("critical", health)
+    
+    async def _issue_alert(self, level: str, health: Dict[str, Any]):
+        """Issue an alert via callback or logging."""
+        alert_message = f"Queue Health {level.upper()}: {', '.join(health['alerts'])}"
+        
+        if level == "critical":
+            self.logger.error(alert_message)
+        else:
+            self.logger.warning(alert_message)
+        
+        if self.alert_callback:
+            try:
+                await self.alert_callback(level, health)
+            except Exception as e:
+                self.logger.error(f"Alert callback failed: {e}")
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get watchdog statistics."""
+        return {
+            "running": self._running,
+            "check_interval": self.check_interval,
+            "thresholds": {
+                "warning": self.warning_threshold,
+                "critical": self.critical_threshold
+            },
+            "stats": self.stats.copy()
+        }
+
+
+class GlobalRateLimitCoordinator:
+    """
+    Coordinates rate limiting across multiple bots to respect global API limits.
+    
+    When multiple bots share resources or need to coordinate their sending,
+    this coordinator ensures they don't collectively exceed limits.
+    
+    Features:
+    - Global token bucket for shared limits
+    - Per-bot tracking
+    - Fairness scheduling
+    
+    Usage:
+        coordinator = GlobalRateLimitCoordinator(global_limit=90)
+        coordinator.register_bot("controller", controller_limiter)
+        coordinator.register_bot("notification", notification_limiter)
+        await coordinator.start()
+    """
+    
+    def __init__(
+        self,
+        global_messages_per_second: float = 90.0,
+        global_messages_per_minute: float = 60.0,
+        fairness_enabled: bool = True
+    ):
+        """
+        Initialize coordinator.
+        
+        Args:
+            global_messages_per_second: Combined limit across all bots
+            global_messages_per_minute: Combined per-minute limit
+            fairness_enabled: Enable fair scheduling between bots
+        """
+        self.global_per_second = global_messages_per_second
+        self.global_per_minute = global_messages_per_minute
+        self.fairness_enabled = fairness_enabled
+        
+        self.global_bucket = TokenBucket(
+            capacity=global_messages_per_second,
+            refill_rate=global_messages_per_second / 60.0
+        )
+        
+        self.bots: Dict[str, "TelegramRateLimiter"] = {}
+        self.bot_send_counts: Dict[str, int] = {}
+        self.last_bot_index = 0
+        
+        self._running = False
+        self._lock = asyncio.Lock()
+        
+        self.stats = {
+            "total_coordinated": 0,
+            "total_throttled": 0,
+            "fairness_adjustments": 0
+        }
+        
+        self.logger = logging.getLogger(f"{__name__}.GlobalRateLimitCoordinator")
+    
+    def register_bot(self, name: str, limiter: "TelegramRateLimiter"):
+        """
+        Register a bot with the coordinator.
+        
+        Args:
+            name: Bot identifier
+            limiter: The bot's rate limiter
+        """
+        self.bots[name] = limiter
+        self.bot_send_counts[name] = 0
+        self.logger.info(f"Registered bot: {name}")
+    
+    def unregister_bot(self, name: str):
+        """
+        Unregister a bot from the coordinator.
+        
+        Args:
+            name: Bot identifier
+        """
+        if name in self.bots:
+            del self.bots[name]
+            del self.bot_send_counts[name]
+            self.logger.info(f"Unregistered bot: {name}")
+    
+    async def request_send_permission(self, bot_name: str) -> bool:
+        """
+        Request permission to send a message.
+        
+        Args:
+            bot_name: Name of the requesting bot
+            
+        Returns:
+            True if permission granted, False if should wait
+        """
+        async with self._lock:
+            if bot_name not in self.bots:
+                self.logger.warning(f"Unknown bot requesting permission: {bot_name}")
+                return True
+            
+            if self.global_bucket.consume(1.0):
+                self.stats["total_coordinated"] += 1
+                self.bot_send_counts[bot_name] += 1
+                return True
+            else:
+                self.stats["total_throttled"] += 1
+                return False
+    
+    async def wait_for_permission(self, bot_name: str, timeout: float = 5.0) -> bool:
+        """
+        Wait for permission to send a message.
+        
+        Args:
+            bot_name: Name of the requesting bot
+            timeout: Maximum time to wait
+            
+        Returns:
+            True if permission granted within timeout
+        """
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            if await self.request_send_permission(bot_name):
+                return True
+            
+            wait_time = self.global_bucket.wait_time(1.0)
+            await asyncio.sleep(min(wait_time, 0.1))
+        
+        return False
+    
+    def get_fair_share(self, bot_name: str) -> float:
+        """
+        Calculate fair share of global limit for a bot.
+        
+        Args:
+            bot_name: Bot identifier
+            
+        Returns:
+            Percentage of global limit (0.0 to 1.0)
+        """
+        if not self.fairness_enabled or len(self.bots) == 0:
+            return 1.0
+        
+        return 1.0 / len(self.bots)
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get coordinator statistics."""
+        return {
+            "global_limits": {
+                "per_second": self.global_per_second,
+                "per_minute": self.global_per_minute
+            },
+            "registered_bots": list(self.bots.keys()),
+            "bot_send_counts": self.bot_send_counts.copy(),
+            "available_tokens": self.global_bucket.get_available_tokens(),
+            "fairness_enabled": self.fairness_enabled,
+            "stats": self.stats.copy()
+        }
+    
+    def reset_stats(self):
+        """Reset all statistics."""
+        self.stats = {
+            "total_coordinated": 0,
+            "total_throttled": 0,
+            "fairness_adjustments": 0
+        }
+        for bot_name in self.bot_send_counts:
+            self.bot_send_counts[bot_name] = 0
+
+
+class EnhancedTelegramRateLimiter(TelegramRateLimiter):
+    """
+    Enhanced rate limiter with Token Bucket and Exponential Backoff.
+    
+    Extends TelegramRateLimiter with:
+    - Token Bucket algorithm for precise burst handling
+    - Exponential backoff for 429 error recovery
+    - Integration with GlobalRateLimitCoordinator
+    
+    Usage:
+        limiter = EnhancedTelegramRateLimiter("ControllerBot")
+        await limiter.start()
+        await limiter.enqueue(message)
+    """
+    
+    def __init__(
+        self,
+        bot_name: str,
+        max_per_minute: int = 20,
+        max_per_second: int = 30,
+        max_queue_size: int = 100,
+        coordinator: Optional[GlobalRateLimitCoordinator] = None
+    ):
+        """
+        Initialize enhanced rate limiter.
+        
+        Args:
+            bot_name: Name of the bot
+            max_per_minute: Maximum messages per minute
+            max_per_second: Maximum messages per second
+            max_queue_size: Maximum queue size
+            coordinator: Optional global coordinator
+        """
+        super().__init__(bot_name, max_per_minute, max_per_second, max_queue_size)
+        
+        self.token_bucket = TokenBucket(
+            capacity=float(max_per_second),
+            refill_rate=float(max_per_minute) / 60.0
+        )
+        
+        self.backoff = ExponentialBackoff(
+            base_delay=1.0,
+            max_delay=60.0,
+            multiplier=2.0
+        )
+        
+        self.coordinator = coordinator
+        
+        self.stats["token_bucket_waits"] = 0
+        self.stats["backoff_waits"] = 0
+        self.stats["coordinator_throttles"] = 0
+    
+    def _can_send(self) -> bool:
+        """
+        Check if we can send using Token Bucket algorithm.
+        
+        Returns:
+            True if token available, False otherwise
+        """
+        if not self.token_bucket.consume(1.0):
+            self.stats["token_bucket_waits"] += 1
+            return False
+        
+        return super()._can_send()
+    
+    async def _send_message(self, message: ThrottledMessage) -> bool:
+        """
+        Send message with exponential backoff on failure.
+        
+        Args:
+            message: Message to send
+            
+        Returns:
+            True if sent successfully
+        """
+        if self.coordinator:
+            if not await self.coordinator.request_send_permission(self.bot_name):
+                self.stats["coordinator_throttles"] += 1
+                return False
+        
+        if self.backoff.current_attempt > 0:
+            self.stats["backoff_waits"] += 1
+            await self.backoff.wait()
+        
+        try:
+            success = await super()._send_message(message)
+            
+            if success:
+                self.backoff.record_success()
+            else:
+                self.backoff.record_failure()
+            
+            return success
+            
+        except RateLimitError as e:
+            self.backoff.record_failure()
+            self.logger.warning(
+                f"{self.bot_name}: Rate limit hit, backing off "
+                f"(attempt {self.backoff.current_attempt}, "
+                f"retry_after={e.retry_after}s)"
+            )
+            return False
+        except Exception as e:
+            self.backoff.record_failure()
+            self.logger.error(f"{self.bot_name}: Send error: {e}")
+            return False
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get enhanced statistics."""
+        stats = super().get_stats()
+        stats["token_bucket"] = {
+            "available_tokens": self.token_bucket.get_available_tokens(),
+            "capacity": self.token_bucket.capacity,
+            "refill_rate": self.token_bucket.refill_rate
+        }
+        stats["backoff"] = {
+            "current_attempt": self.backoff.current_attempt,
+            "next_delay": self.backoff.get_delay()
+        }
+        stats["has_coordinator"] = self.coordinator is not None
+        return stats
+
+
+def create_rate_limiter(
+    bot_name: str,
+    max_per_minute: int = 20,
+    max_per_second: int = 30,
+    max_queue_size: int = 100,
+    enhanced: bool = True,
+    coordinator: Optional[GlobalRateLimitCoordinator] = None
+) -> TelegramRateLimiter:
+    """
+    Factory function to create rate limiter.
+    
+    Args:
+        bot_name: Name of the bot
+        max_per_minute: Maximum messages per minute
+        max_per_second: Maximum messages per second
+        max_queue_size: Maximum queue size
+        enhanced: Use enhanced limiter with Token Bucket
+        coordinator: Optional global coordinator
+        
+    Returns:
+        TelegramRateLimiter or EnhancedTelegramRateLimiter
+    """
+    if enhanced:
+        return EnhancedTelegramRateLimiter(
+            bot_name=bot_name,
+            max_per_minute=max_per_minute,
+            max_per_second=max_per_second,
+            max_queue_size=max_queue_size,
+            coordinator=coordinator
+        )
+    else:
+        return TelegramRateLimiter(
+            bot_name=bot_name,
+            max_per_minute=max_per_minute,
+            max_per_second=max_per_second,
+            max_queue_size=max_queue_size
+        )
