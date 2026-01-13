@@ -516,3 +516,268 @@ class UnifiedInterface:
 def create_unified_interface() -> UnifiedInterface:
     """Factory function to create Unified Interface."""
     return UnifiedInterface()
+
+
+# =============================================================================
+# DOCUMENT 20 ADDITIONS: Unified Interface Manager
+# =============================================================================
+
+class InterfaceState(Enum):
+    """Interface state for unified management."""
+    INITIALIZING = "initializing"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    STOPPED = "stopped"
+    ERROR = "error"
+
+
+class BotType(Enum):
+    """Bot types for header variants."""
+    CONTROLLER = "controller"
+    NOTIFICATION = "notification"
+    ANALYTICS = "analytics"
+
+
+@dataclass
+class HeaderMetrics:
+    """Metrics displayed in live header."""
+    open_trades: int = 0
+    daily_pnl: float = 0.0
+    win_rate: float = 0.0
+    active_plugins: int = 0
+    total_plugins: int = 0
+    alerts_today: int = 0
+    entries_today: int = 0
+    exits_today: int = 0
+    reports_sent: int = 0
+    mt5_connected: bool = True
+    bot_running: bool = True
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "open_trades": self.open_trades,
+            "daily_pnl": self.daily_pnl,
+            "win_rate": self.win_rate,
+            "active_plugins": self.active_plugins,
+            "total_plugins": self.total_plugins,
+            "alerts_today": self.alerts_today,
+            "entries_today": self.entries_today,
+            "exits_today": self.exits_today,
+            "reports_sent": self.reports_sent,
+            "mt5_connected": self.mt5_connected,
+            "bot_running": self.bot_running
+        }
+
+
+@dataclass
+class BotInterface:
+    """Interface for a single bot in unified system."""
+    bot_type: BotType
+    chat_id: int
+    menu_message_id: Optional[int] = None
+    current_menu: MenuType = MenuType.MAIN
+    state: InterfaceState = InterfaceState.INITIALIZING
+    last_activity: Optional[datetime] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "bot_type": self.bot_type.value,
+            "chat_id": self.chat_id,
+            "menu_message_id": self.menu_message_id,
+            "current_menu": self.current_menu.value,
+            "state": self.state.value,
+            "last_activity": self.last_activity.isoformat() if self.last_activity else None
+        }
+
+
+class UnifiedInterfaceManager:
+    """
+    Unified Interface Manager (Document 20)
+    
+    Manages consistent interface across all 3 Telegram bots.
+    Implements zero-typing interface with button-based navigation.
+    
+    Features:
+    - Same menu system for all bots
+    - Live sticky headers per bot
+    - Unified callback handling
+    - Message editing (sticky interface)
+    """
+    
+    def __init__(
+        self,
+        controller_chat_id: Optional[int] = None,
+        notification_chat_id: Optional[int] = None,
+        analytics_chat_id: Optional[int] = None
+    ):
+        """Initialize unified interface manager."""
+        self.interfaces: Dict[BotType, BotInterface] = {}
+        self.builder = MenuBuilder()
+        self.shared_metrics = HeaderMetrics()
+        self.state = InterfaceState.INITIALIZING
+        
+        # Initialize interfaces if chat IDs provided
+        if controller_chat_id:
+            self.interfaces[BotType.CONTROLLER] = BotInterface(
+                bot_type=BotType.CONTROLLER,
+                chat_id=controller_chat_id
+            )
+        if notification_chat_id:
+            self.interfaces[BotType.NOTIFICATION] = BotInterface(
+                bot_type=BotType.NOTIFICATION,
+                chat_id=notification_chat_id
+            )
+        if analytics_chat_id:
+            self.interfaces[BotType.ANALYTICS] = BotInterface(
+                bot_type=BotType.ANALYTICS,
+                chat_id=analytics_chat_id
+            )
+        
+        logger.info("UnifiedInterfaceManager initialized")
+    
+    def add_bot(self, bot_type: BotType, chat_id: int) -> BotInterface:
+        """Add a bot to the unified interface."""
+        interface = BotInterface(
+            bot_type=bot_type,
+            chat_id=chat_id
+        )
+        self.interfaces[bot_type] = interface
+        logger.info(f"Added bot to unified interface: {bot_type.value}")
+        return interface
+    
+    def get_interface(self, bot_type: BotType) -> Optional[BotInterface]:
+        """Get interface for bot."""
+        return self.interfaces.get(bot_type)
+    
+    def update_metrics(self, metrics: HeaderMetrics) -> None:
+        """Update shared metrics for all headers."""
+        self.shared_metrics = metrics
+    
+    def update_metric(self, key: str, value: Any) -> None:
+        """Update single metric for all headers."""
+        if hasattr(self.shared_metrics, key):
+            setattr(self.shared_metrics, key, value)
+    
+    def get_all_status(self) -> Dict[str, Any]:
+        """Get status of all interfaces."""
+        return {
+            "state": self.state.value,
+            "interfaces": {
+                bot_type.value: interface.to_dict()
+                for bot_type, interface in self.interfaces.items()
+            },
+            "metrics": self.shared_metrics.to_dict()
+        }
+    
+    def list_bots(self) -> List[str]:
+        """List all registered bots."""
+        return [bt.value for bt in self.interfaces.keys()]
+
+
+class MessageEditor:
+    """
+    Message Editor (Document 20)
+    
+    Handles message editing to reduce clutter (sticky interface behavior).
+    Updates existing messages instead of sending new ones.
+    """
+    
+    def __init__(self):
+        """Initialize message editor."""
+        self.tracked_messages: Dict[str, int] = {}
+    
+    def track_message(self, key: str, message_id: int) -> None:
+        """Track a message for future editing."""
+        self.tracked_messages[key] = message_id
+    
+    def get_message_id(self, key: str) -> Optional[int]:
+        """Get tracked message ID."""
+        return self.tracked_messages.get(key)
+    
+    def untrack_message(self, key: str) -> bool:
+        """Stop tracking a message."""
+        if key in self.tracked_messages:
+            del self.tracked_messages[key]
+            return True
+        return False
+    
+    def should_edit(self, key: str) -> bool:
+        """Check if message should be edited vs sent new."""
+        return key in self.tracked_messages
+    
+    def get_tracked_count(self) -> int:
+        """Get count of tracked messages."""
+        return len(self.tracked_messages)
+    
+    def clear_all(self) -> None:
+        """Clear all tracked messages."""
+        self.tracked_messages.clear()
+
+
+class NavigationManager:
+    """
+    Navigation Manager (Document 20)
+    
+    Manages navigation state and history for seamless transitions.
+    Supports Back/Home buttons and breadcrumb navigation.
+    """
+    
+    def __init__(self, max_history: int = 10):
+        """Initialize navigation manager."""
+        self.history: Dict[int, List[MenuType]] = {}
+        self.max_history = max_history
+    
+    def push(self, user_id: int, menu: MenuType) -> None:
+        """Push menu to history."""
+        if user_id not in self.history:
+            self.history[user_id] = []
+        
+        self.history[user_id].append(menu)
+        
+        # Limit history size
+        if len(self.history[user_id]) > self.max_history:
+            self.history[user_id] = self.history[user_id][-self.max_history:]
+    
+    def pop(self, user_id: int) -> Optional[MenuType]:
+        """Pop last menu from history."""
+        if user_id in self.history and self.history[user_id]:
+            return self.history[user_id].pop()
+        return None
+    
+    def peek(self, user_id: int) -> Optional[MenuType]:
+        """Peek at last menu without removing."""
+        if user_id in self.history and self.history[user_id]:
+            return self.history[user_id][-1]
+        return None
+    
+    def get_previous(self, user_id: int) -> MenuType:
+        """Get previous menu (for back button)."""
+        if user_id in self.history and len(self.history[user_id]) > 1:
+            return self.history[user_id][-2]
+        return MenuType.MAIN
+    
+    def clear(self, user_id: int) -> None:
+        """Clear history for user."""
+        if user_id in self.history:
+            del self.history[user_id]
+    
+    def get_breadcrumb(self, user_id: int) -> List[str]:
+        """Get navigation breadcrumb."""
+        if user_id not in self.history:
+            return ["Main"]
+        return [m.value.title() for m in self.history[user_id]]
+
+
+def create_unified_interface_manager(
+    controller_chat_id: Optional[int] = None,
+    notification_chat_id: Optional[int] = None,
+    analytics_chat_id: Optional[int] = None
+) -> UnifiedInterfaceManager:
+    """Factory function to create Unified Interface Manager."""
+    return UnifiedInterfaceManager(
+        controller_chat_id=controller_chat_id,
+        notification_chat_id=notification_chat_id,
+        analytics_chat_id=analytics_chat_id
+    )
