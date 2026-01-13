@@ -635,10 +635,12 @@ class TestCallbackHandler:
         )
         
         # Run async test
-        loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(processor.process(context))
-        assert result.success == True
-        assert result.redirect_menu == "trading"
+        async def run_test():
+            result = await processor.process(context)
+            assert result.success == True
+            assert result.redirect_menu == "trading"
+        
+        asyncio.run(run_test())
     
     def test_callback_processor_pending_confirmations(self):
         """Test pending confirmations tracking."""
@@ -1266,9 +1268,12 @@ class TestDocument20Summary:
             user_id=123, chat_id=456, message_id=789,
             callback_data=data
         )
-        loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(processor.process(context))
-        assert result.success == True
+        
+        async def run_test():
+            result = await processor.process(context)
+            assert result.success == True
+        
+        asyncio.run(run_test())
     
     def test_user_input_handling_implemented(self):
         """Test user input handling is implemented."""

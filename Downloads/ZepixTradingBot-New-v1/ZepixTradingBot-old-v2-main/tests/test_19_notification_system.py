@@ -155,30 +155,30 @@ class TestNotificationRouter:
         import asyncio
         from src.notifications.notification_router import NotificationRouter, NotificationType
         
-        router = NotificationRouter()
-        notification = asyncio.get_event_loop().run_until_complete(
-            router.send(
+        async def run_test():
+            router = NotificationRouter()
+            notification = await router.send(
                 NotificationType.ENTRY_V3_DUAL,
                 {"symbol": "EURUSD", "direction": "BUY", "entry_price": 1.1000}
             )
-        )
+            assert notification is not None
+            assert notification.notification_type == NotificationType.ENTRY_V3_DUAL
+            assert notification.delivered is True
         
-        assert notification is not None
-        assert notification.notification_type == NotificationType.ENTRY_V3_DUAL
-        assert notification.delivered is True
+        asyncio.run(run_test())
     
     def test_send_emergency_notification(self):
         """Test sending emergency notification"""
         import asyncio
         from src.notifications.notification_router import NotificationRouter
         
-        router = NotificationRouter()
-        notification = asyncio.get_event_loop().run_until_complete(
-            router.send_emergency_notification("Test emergency")
-        )
+        async def run_test():
+            router = NotificationRouter()
+            notification = await router.send_emergency_notification("Test emergency")
+            assert notification is not None
+            assert notification.delivered is True
         
-        assert notification is not None
-        assert notification.delivered is True
+        asyncio.run(run_test())
     
     def test_voice_text_generation(self):
         """Test voice text generation"""
@@ -414,9 +414,12 @@ class TestDeliveryManager:
         import asyncio
         from src.notifications.delivery_manager import RateLimiter
         
-        limiter = RateLimiter()
-        result = asyncio.get_event_loop().run_until_complete(limiter.acquire())
-        assert result is True
+        async def run_test():
+            limiter = RateLimiter()
+            result = await limiter.acquire()
+            assert result is True
+        
+        asyncio.run(run_test())
     
     def test_retry_policy(self):
         """Test retry policy"""
@@ -441,18 +444,18 @@ class TestDeliveryManager:
         import asyncio
         from src.notifications.delivery_manager import NotificationQueueManager, DeliveryPriority
         
-        manager = NotificationQueueManager()
-        result = asyncio.get_event_loop().run_until_complete(
-            manager.add_message(
+        async def run_test():
+            manager = NotificationQueueManager()
+            result = await manager.add_message(
                 notification_id="TEST-001",
                 message="Test message",
                 target_bot="notification",
                 priority=DeliveryPriority.NORMAL
             )
-        )
+            assert result is True
+            assert manager.get_queue_size() == 1
         
-        assert result is True
-        assert manager.get_queue_size() == 1
+        asyncio.run(run_test())
     
     def test_delivery_manager_creation(self):
         """Test delivery manager creation"""

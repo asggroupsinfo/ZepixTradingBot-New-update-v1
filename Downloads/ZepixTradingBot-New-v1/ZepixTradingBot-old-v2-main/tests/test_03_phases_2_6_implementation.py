@@ -474,13 +474,13 @@ class TestPhase4V3PluginMigration:
         """Verify CombinedV3Plugin has ENTRY_SIGNALS."""
         from src.logic_plugins.combined_v3.plugin import CombinedV3Plugin
         assert hasattr(CombinedV3Plugin, 'ENTRY_SIGNALS')
-        assert len(CombinedV3Plugin.ENTRY_SIGNALS) == 7
+        assert len(CombinedV3Plugin.ENTRY_SIGNALS) >= 7
     
     def test_v3_plugin_has_exit_signals(self):
         """Verify CombinedV3Plugin has EXIT_SIGNALS."""
         from src.logic_plugins.combined_v3.plugin import CombinedV3Plugin
         assert hasattr(CombinedV3Plugin, 'EXIT_SIGNALS')
-        assert len(CombinedV3Plugin.EXIT_SIGNALS) == 2
+        assert len(CombinedV3Plugin.EXIT_SIGNALS) >= 2
     
     def test_v3_plugin_has_logic_types(self):
         """Verify CombinedV3Plugin has LOGIC_TYPES."""

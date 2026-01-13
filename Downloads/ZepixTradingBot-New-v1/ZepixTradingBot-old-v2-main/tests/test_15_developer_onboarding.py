@@ -687,34 +687,28 @@ class TestMockServices:
         import asyncio
         from src.logic_plugins.hello_world.plugin import MockOrderService
         
-        service = MockOrderService()
+        async def run_test():
+            service = MockOrderService()
+            ticket = await service.place_order("XAUUSD", "BUY", 0.1)
+            assert ticket == 12345
+            result = await service.close_position(12345)
+            assert result == True
         
-        ticket = asyncio.get_event_loop().run_until_complete(
-            service.place_order("XAUUSD", "BUY", 0.1)
-        )
-        assert ticket == 12345
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            service.close_position(12345)
-        )
-        assert result == True
+        asyncio.run(run_test())
     
     def test_mock_risk_service(self):
         """Test MockRiskService methods."""
         import asyncio
         from src.logic_plugins.hello_world.plugin import MockRiskService
         
-        service = MockRiskService()
+        async def run_test():
+            service = MockRiskService()
+            lot_size = await service.calculate_lot_size("XAUUSD", 1.5, 25)
+            assert lot_size > 0
+            status = await service.check_daily_limit()
+            assert status["can_trade"] == True
         
-        lot_size = asyncio.get_event_loop().run_until_complete(
-            service.calculate_lot_size("XAUUSD", 1.5, 25)
-        )
-        assert lot_size > 0
-        
-        status = asyncio.get_event_loop().run_until_complete(
-            service.check_daily_limit()
-        )
-        assert status["can_trade"] == True
+        asyncio.run(run_test())
 
 
 class TestCreateHelloWorldPlugin:

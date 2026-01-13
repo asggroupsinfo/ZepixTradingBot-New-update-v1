@@ -511,45 +511,41 @@ class TestPriceAction1MPlugin:
         import asyncio
         from src.logic_plugins.price_action_1m.plugin import PriceAction1M
         
-        plugin = PriceAction1M("price_action_1m", {})
+        async def run_test():
+            plugin = PriceAction1M("price_action_1m", {})
+            signal = {
+                "symbol": "XAUUSD",
+                "direction": "BUY",
+                "price": 2030.50,
+                "adx": 15,
+                "conf_score": 85
+            }
+            result = await plugin.on_signal_received(signal)
+            assert result == False
         
-        signal = {
-            "symbol": "XAUUSD",
-            "direction": "BUY",
-            "price": 2030.50,
-            "adx": 15,
-            "conf_score": 85
-        }
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            plugin.on_signal_received(signal)
-        )
-        
-        assert result == False
+        asyncio.run(run_test())
     
     def test_1m_order_b_only(self):
         """Test 1M places ORDER B only."""
         import asyncio
         from src.logic_plugins.price_action_1m.plugin import PriceAction1M
         
-        plugin = PriceAction1M("price_action_1m", {})
+        async def run_test():
+            plugin = PriceAction1M("price_action_1m", {})
+            signal = {
+                "symbol": "XAUUSD",
+                "direction": "BUY",
+                "price": 2030.50,
+                "adx": 25,
+                "conf_score": 85,
+                "sl_price": 2028.00,
+                "tp1_price": 2032.00
+            }
+            result = await plugin.on_signal_received(signal)
+            assert result == True
+            assert len(plugin._trades) == 1
         
-        signal = {
-            "symbol": "XAUUSD",
-            "direction": "BUY",
-            "price": 2030.50,
-            "adx": 25,
-            "conf_score": 85,
-            "sl_price": 2028.00,
-            "tp1_price": 2032.00
-        }
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            plugin.on_signal_received(signal)
-        )
-        
-        assert result == True
-        assert len(plugin._trades) == 1
+        asyncio.run(run_test())
 
 
 class TestPriceAction5MPlugin:
@@ -583,27 +579,25 @@ class TestPriceAction5MPlugin:
         import asyncio
         from src.logic_plugins.price_action_5m.plugin import PriceAction5M
         
-        plugin = PriceAction5M("price_action_5m", {})
+        async def run_test():
+            plugin = PriceAction5M("price_action_5m", {})
+            signal = {
+                "symbol": "XAUUSD",
+                "direction": "BUY",
+                "price": 2030.50,
+                "adx": 30,
+                "conf_score": 75,
+                "sl_price": 2028.00,
+                "tp1_price": 2032.00,
+                "tp2_price": 2035.00
+            }
+            result = await plugin.on_signal_received(signal)
+            assert result == True
+            assert len(plugin._trades) == 1
+            assert plugin._trades[0].order_a_ticket is not None
+            assert plugin._trades[0].order_b_ticket is not None
         
-        signal = {
-            "symbol": "XAUUSD",
-            "direction": "BUY",
-            "price": 2030.50,
-            "adx": 30,
-            "conf_score": 75,
-            "sl_price": 2028.00,
-            "tp1_price": 2032.00,
-            "tp2_price": 2035.00
-        }
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            plugin.on_signal_received(signal)
-        )
-        
-        assert result == True
-        assert len(plugin._trades) == 1
-        assert plugin._trades[0].order_a_ticket is not None
-        assert plugin._trades[0].order_b_ticket is not None
+        asyncio.run(run_test())
 
 
 class TestPriceAction15MPlugin:
@@ -637,25 +631,23 @@ class TestPriceAction15MPlugin:
         import asyncio
         from src.logic_plugins.price_action_15m.plugin import PriceAction15M
         
-        plugin = PriceAction15M("price_action_15m", {})
+        async def run_test():
+            plugin = PriceAction15M("price_action_15m", {})
+            signal = {
+                "symbol": "XAUUSD",
+                "direction": "BUY",
+                "price": 2030.50,
+                "adx": 25,
+                "conf_score": 75,
+                "sl_price": 2028.00,
+                "tp2_price": 2035.00
+            }
+            result = await plugin.on_signal_received(signal)
+            assert result == True
+            assert len(plugin._trades) == 1
+            assert plugin._trades[0].order_a_ticket is not None
         
-        signal = {
-            "symbol": "XAUUSD",
-            "direction": "BUY",
-            "price": 2030.50,
-            "adx": 25,
-            "conf_score": 75,
-            "sl_price": 2028.00,
-            "tp2_price": 2035.00
-        }
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            plugin.on_signal_received(signal)
-        )
-        
-        assert result == True
-        assert len(plugin._trades) == 1
-        assert plugin._trades[0].order_a_ticket is not None
+        asyncio.run(run_test())
 
 
 class TestPriceAction1HPlugin:
@@ -689,24 +681,22 @@ class TestPriceAction1HPlugin:
         import asyncio
         from src.logic_plugins.price_action_1h.plugin import PriceAction1H
         
-        plugin = PriceAction1H("price_action_1h", {})
+        async def run_test():
+            plugin = PriceAction1H("price_action_1h", {})
+            signal = {
+                "symbol": "XAUUSD",
+                "direction": "BUY",
+                "price": 2030.50,
+                "adx": 25,
+                "conf_score": 65,
+                "sl_price": 2028.00,
+                "tp3_price": 2038.00
+            }
+            result = await plugin.on_signal_received(signal)
+            assert result == True
+            assert len(plugin._trades) == 1
         
-        signal = {
-            "symbol": "XAUUSD",
-            "direction": "BUY",
-            "price": 2030.50,
-            "adx": 25,
-            "conf_score": 65,
-            "sl_price": 2028.00,
-            "tp3_price": 2038.00
-        }
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            plugin.on_signal_received(signal)
-        )
-        
-        assert result == True
-        assert len(plugin._trades) == 1
+        asyncio.run(run_test())
 
 
 class TestV6EngineExecution:
@@ -718,28 +708,26 @@ class TestV6EngineExecution:
         from src.v6_integration.v6_engine import V6IntegrationEngine
         from src.v6_integration.alert_models import ZepixV6Alert
         
-        engine = V6IntegrationEngine()
+        async def run_test():
+            engine = V6IntegrationEngine()
+            alert = ZepixV6Alert(
+                alert_type="BULLISH_ENTRY",
+                ticker="XAUUSD",
+                tf="1",
+                price=2030.50,
+                direction="BUY",
+                conf_level="HIGH",
+                conf_score=85,
+                adx=25.0,
+                sl=2028.00,
+                tp1=2032.00
+            )
+            result = await engine.execute_entry(alert)
+            assert result.success == True
+            assert result.ticket_b is not None
+            assert result.ticket_a is None
         
-        alert = ZepixV6Alert(
-            alert_type="BULLISH_ENTRY",
-            ticker="XAUUSD",
-            tf="1",
-            price=2030.50,
-            direction="BUY",
-            conf_level="HIGH",
-            conf_score=85,
-            adx=25.0,
-            sl=2028.00,
-            tp1=2032.00
-        )
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            engine.execute_entry(alert)
-        )
-        
-        assert result.success == True
-        assert result.ticket_b is not None
-        assert result.ticket_a is None
+        asyncio.run(run_test())
     
     def test_execute_entry_5m(self):
         """Test execute entry for 5M."""
@@ -747,30 +735,28 @@ class TestV6EngineExecution:
         from src.v6_integration.v6_engine import V6IntegrationEngine
         from src.v6_integration.alert_models import ZepixV6Alert
         
-        engine = V6IntegrationEngine()
-        engine.trend_pulse.update_pulse("XAUUSD", "15", 5, 1, "TRENDING_BULLISH")
+        async def run_test():
+            engine = V6IntegrationEngine()
+            engine.trend_pulse.update_pulse("XAUUSD", "15", 5, 1, "TRENDING_BULLISH")
+            alert = ZepixV6Alert(
+                alert_type="BULLISH_ENTRY",
+                ticker="XAUUSD",
+                tf="5",
+                price=2030.50,
+                direction="BUY",
+                conf_level="HIGH",
+                conf_score=75,
+                adx=30.0,
+                sl=2028.00,
+                tp1=2032.00,
+                tp2=2035.00
+            )
+            result = await engine.execute_entry(alert)
+            assert result.success == True
+            assert result.ticket_a is not None
+            assert result.ticket_b is not None
         
-        alert = ZepixV6Alert(
-            alert_type="BULLISH_ENTRY",
-            ticker="XAUUSD",
-            tf="5",
-            price=2030.50,
-            direction="BUY",
-            conf_level="HIGH",
-            conf_score=75,
-            adx=30.0,
-            sl=2028.00,
-            tp1=2032.00,
-            tp2=2035.00
-        )
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            engine.execute_entry(alert)
-        )
-        
-        assert result.success == True
-        assert result.ticket_a is not None
-        assert result.ticket_b is not None
+        asyncio.run(run_test())
 
 
 class TestV3V6Isolation:
@@ -791,25 +777,23 @@ class TestV3V6Isolation:
         from src.v6_integration.v6_engine import V6IntegrationEngine
         from src.v6_integration.alert_models import ZepixV6Alert
         
-        engine = V6IntegrationEngine()
+        async def run_test():
+            engine = V6IntegrationEngine()
+            alert = ZepixV6Alert(
+                alert_type="BULLISH_ENTRY",
+                ticker="XAUUSD",
+                tf="1",
+                price=2030.50,
+                direction="BUY",
+                conf_level="HIGH",
+                conf_score=85,
+                adx=25.0
+            )
+            result = await engine.execute_entry(alert)
+            assert result.plugin_id == "price_action_1m"
+            assert "v3" not in result.plugin_id.lower()
         
-        alert = ZepixV6Alert(
-            alert_type="BULLISH_ENTRY",
-            ticker="XAUUSD",
-            tf="1",
-            price=2030.50,
-            direction="BUY",
-            conf_level="HIGH",
-            conf_score=85,
-            adx=25.0
-        )
-        
-        result = asyncio.get_event_loop().run_until_complete(
-            engine.execute_entry(alert)
-        )
-        
-        assert result.plugin_id == "price_action_1m"
-        assert "v3" not in result.plugin_id.lower()
+        asyncio.run(run_test())
 
 
 class TestDocument16Integration:
