@@ -42,13 +42,22 @@ class V3SignalHandlers:
     - Info signals -> process_info_signal
     """
     
+    # Signal aliases for Pine V3 compatibility
+    # Maps Pine signal names to internal handler names
+    SIGNAL_ALIASES = {
+        'Liquidity_Trap_Reversal': 'Liquidity_Trap',
+        'Mitigation_Test_Entry': 'Mitigation_Test'
+    }
+    
     # Signal type to handler mapping
     SIGNAL_HANDLERS = {
         # Entry signals (7)
         'Institutional_Launchpad': 'handle_institutional_launchpad',
         'Liquidity_Trap': 'handle_liquidity_trap',
+        'Liquidity_Trap_Reversal': 'handle_liquidity_trap',  # Pine V3 alias
         'Momentum_Breakout': 'handle_momentum_breakout',
         'Mitigation_Test': 'handle_mitigation_test',
+        'Mitigation_Test_Entry': 'handle_mitigation_test',  # Pine V3 alias
         'Golden_Pocket_Flip': 'handle_golden_pocket_flip',
         'Golden_Pocket_Flip_1H': 'handle_golden_pocket_flip',
         'Golden_Pocket_Flip_4H': 'handle_golden_pocket_flip',

@@ -90,6 +90,28 @@ class PriceActionV6Plugin(BaseLogicPlugin):
         "PA_Session_Close"
     ]
     
+    # V6 Pine Signal to Bot Handler Mapping
+    # Maps Pine V6 signal names to internal bot handler names
+    V6_SIGNAL_MAP = {
+        # Entry signals
+        "BULLISH_ENTRY": "PA_Breakout_Entry",
+        "BEARISH_ENTRY": "PA_Breakout_Entry",
+        "SIDEWAYS_BREAKOUT": "PA_Momentum_Entry",
+        "TRENDLINE_BULLISH_BREAK": "PA_Support_Bounce",
+        "TRENDLINE_BEARISH_BREAK": "PA_Resistance_Rejection",
+        "BREAKOUT": "PA_Breakout_Entry",
+        "BREAKDOWN": "PA_Breakout_Entry",
+        # Exit signals
+        "EXIT_BULLISH": "PA_Exit_Signal",
+        "EXIT_BEARISH": "PA_Exit_Signal",
+        # Info signals
+        "TREND_PULSE": "PA_Trend_Pulse",
+        "MOMENTUM_CHANGE": "PA_Volatility_Alert",
+        "STATE_CHANGE": "PA_Volatility_Alert",
+        "SCREENER_FULL_BULLISH": "PA_Trend_Pulse",
+        "SCREENER_FULL_BEARISH": "PA_Trend_Pulse"
+    }
+    
     # Timeframe-specific settings
     TIMEFRAME_SETTINGS = {
         "1M": {
@@ -357,6 +379,77 @@ class PriceActionV6Plugin(BaseLogicPlugin):
         
         return True
     
+    async def process_raw_v6_alert(self, alert_string: str) -> Dict[str, Any]:
+        """
+        Process raw V6 Pine Script alert (pipe-separated format).
+        
+        This method:
+        1. Parses the pipe-separated alert string using V6AlertParser
+        2. Maps Pine signal type to bot handler using V6_SIGNAL_MAP
+        3. Routes to appropriate processing method
+        
+        Args:
+            alert_string: Raw pipe-separated alert from Pine V6
+            
+        Returns:
+            dict: Processing result
+        """
+        from .alert_parser import parse_v6_alert
+        
+        self.logger.info(f"Processing raw V6 alert: {alert_string[:50]}...")
+        
+        # Parse the alert string
+        parsed = parse_v6_alert(alert_string)
+        
+        if not parsed or not parsed.get("parsed", False):
+            self.logger.warning(f"Failed to parse V6 alert: {alert_string}")
+            return {"success": False, "error": "parse_failed", "raw": alert_string}
+        
+        # Get Pine signal type and map to bot handler
+        pine_signal = parsed.get("signal_type", "")
+        bot_handler = self.V6_SIGNAL_MAP.get(pine_signal)
+        
+        if not bot_handler:
+            self.logger.warning(f"Unknown Pine V6 signal: {pine_signal}")
+            return {"success": False, "error": "unknown_signal", "signal_type": pine_signal}
+        
+        # Add mapped alert_type to parsed data
+        parsed["alert_type"] = bot_handler
+        
+        # Normalize timeframe format (Pine sends "15", bot expects "15M")
+        tf = parsed.get("timeframe", "15")
+        if tf and not tf.endswith("M") and not tf.endswith("H"):
+            if tf == "60":
+                parsed["timeframe"] = "1H"
+            else:
+                parsed["timeframe"] = f"{tf}M"
+        
+        # Route to appropriate handler based on category
+        category = parsed.get("category", "unknown")
+        
+        if category == "entry":
+            return await self.process_entry_signal(parsed)
+        elif category == "exit":
+            return await self.process_exit_signal(parsed)
+        elif category == "info":
+            if pine_signal == "TREND_PULSE":
+                return await self.process_trend_pulse(parsed)
+            return {"success": True, "action": "info_logged", "signal_type": pine_signal}
+        
+        return {"success": False, "error": "unknown_category", "category": category}
+    
+    def map_pine_signal(self, pine_signal: str) -> Optional[str]:
+        """
+        Map Pine V6 signal type to bot handler name.
+        
+        Args:
+            pine_signal: Pine V6 signal type (e.g., "BULLISH_ENTRY")
+            
+        Returns:
+            str: Bot handler name (e.g., "PA_Breakout_Entry") or None
+        """
+        return self.V6_SIGNAL_MAP.get(pine_signal)
+    
     def get_status(self) -> Dict[str, Any]:
         """Get plugin status."""
         base_status = super().get_status()
@@ -366,7 +459,8 @@ class PriceActionV6Plugin(BaseLogicPlugin):
             "active_trades": len(self.active_trades),
             "timeframe_stats": self.timeframe_stats,
             "supported_timeframes": self.TIMEFRAMES,
-            "supported_alerts": len(self.ENTRY_ALERTS + self.EXIT_ALERTS + self.INFO_ALERTS)
+            "supported_alerts": len(self.ENTRY_ALERTS + self.EXIT_ALERTS + self.INFO_ALERTS),
+            "v6_signal_mappings": len(self.V6_SIGNAL_MAP)
         })
         
         return base_status

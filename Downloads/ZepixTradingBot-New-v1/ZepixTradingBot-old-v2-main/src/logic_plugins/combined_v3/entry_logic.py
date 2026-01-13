@@ -328,6 +328,8 @@ class EntryLogic:
         Order A: Timeframe-based SL with multiplier
         Order B: Fixed $10 SL
         
+        Supports both Pine field names (sl_price) and legacy (sl).
+        
         Args:
             alert: Alert data
             logic_type: Logic type
@@ -336,7 +338,11 @@ class EntryLogic:
         Returns:
             float: SL price
         """
-        sl_price = getattr(alert, "sl", 0.0)
+        # Support both sl_price (Pine V3) and sl (legacy)
+        if isinstance(alert, dict):
+            sl_price = alert.get("sl_price") or alert.get("sl", 0.0)
+        else:
+            sl_price = getattr(alert, "sl_price", None) or getattr(alert, "sl", 0.0)
         
         if order_type == "ORDER_B":
             return sl_price
@@ -352,6 +358,11 @@ class EntryLogic:
         """
         Calculate TP price for order.
         
+        Order A uses tp1_price (conservative target).
+        Order B uses tp2_price (extended target).
+        
+        Supports both Pine field names (tp1_price, tp2_price) and legacy (tp).
+        
         Args:
             alert: Alert data
             logic_type: Logic type
@@ -360,7 +371,19 @@ class EntryLogic:
         Returns:
             float: TP price
         """
-        return getattr(alert, "tp", 0.0)
+        # Support both tp1_price/tp2_price (Pine V3) and tp (legacy)
+        if isinstance(alert, dict):
+            tp1 = alert.get("tp1_price") or alert.get("tp", 0.0)
+            tp2 = alert.get("tp2_price") or tp1
+        else:
+            tp1 = getattr(alert, "tp1_price", None) or getattr(alert, "tp", 0.0)
+            tp2 = getattr(alert, "tp2_price", None) or tp1
+        
+        # Order A uses tp1 (conservative), Order B uses tp2 (extended)
+        if order_type == "ORDER_A":
+            return tp1
+        else:
+            return tp2
     
     async def _place_order(
         self,
