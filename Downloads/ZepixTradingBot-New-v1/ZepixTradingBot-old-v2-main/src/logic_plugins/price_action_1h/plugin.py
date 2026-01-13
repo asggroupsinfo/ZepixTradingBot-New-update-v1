@@ -46,10 +46,13 @@ class PriceAction1HConfig:
     min_adx: float = 20.0
     min_confidence: int = 60
     max_spread_pips: float = 5.0
-    risk_multiplier: float = 0.625
+    # CRITICAL FIX: Changed from 0.625 to 0.6 per planning doc 05_PRICE_ACTION_LOGIC_1H.md
+    risk_multiplier: float = 0.6
     require_4h_1d_alignment: bool = True
     check_market_state: bool = True
     order_type: OrderType = OrderType.ORDER_A_ONLY
+    # ADX extreme threshold for warning (per planning compliance)
+    adx_extreme_threshold: float = 50.0
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -63,7 +66,8 @@ class PriceAction1HConfig:
             "risk_multiplier": self.risk_multiplier,
             "require_4h_1d_alignment": self.require_4h_1d_alignment,
             "check_market_state": self.check_market_state,
-            "order_type": self.order_type.value
+            "order_type": self.order_type.value,
+            "adx_extreme_threshold": self.adx_extreme_threshold
         }
     
     @classmethod
@@ -76,9 +80,11 @@ class PriceAction1HConfig:
             min_adx=float(data.get("min_adx", 20.0)),
             min_confidence=int(data.get("min_confidence", 60)),
             max_spread_pips=float(data.get("max_spread_pips", 5.0)),
-            risk_multiplier=float(data.get("risk_multiplier", 0.625)),
+            # CRITICAL FIX: Default to 0.6 per planning doc
+            risk_multiplier=float(data.get("risk_multiplier", 0.6)),
             require_4h_1d_alignment=data.get("require_4h_1d_alignment", True),
-            check_market_state=data.get("check_market_state", True)
+            check_market_state=data.get("check_market_state", True),
+            adx_extreme_threshold=float(data.get("adx_extreme_threshold", 50.0))
         )
 
 
@@ -279,6 +285,14 @@ class PriceAction1H:
         if adx is not None and adx < self.config.min_adx:
             logger.info(f"1H Skip: ADX {adx} < {self.config.min_adx}")
             return False
+        
+        # CRITICAL FIX: Add ADX > 50 warning per planning doc 05_PRICE_ACTION_LOGIC_1H.md
+        if adx is not None and adx > self.config.adx_extreme_threshold:
+            logger.warning(
+                f"1H CAUTION: Extreme Trend Detected - ADX {adx} > {self.config.adx_extreme_threshold}. "
+                f"Symbol: {signal.get('symbol', '')} Direction: {signal.get('direction', '')}. "
+                f"Trade will proceed but with elevated risk."
+            )
         
         conf_score = signal.get('conf_score', 0)
         if conf_score < self.config.min_confidence:

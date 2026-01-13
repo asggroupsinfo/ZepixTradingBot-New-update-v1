@@ -239,8 +239,16 @@ class PriceAction5M:
     async def _validate_with_trend_alignment(self, signal: Dict[str, Any]) -> bool:
         """Validate entry with trend alignment."""
         adx = signal.get('adx', 0)
+        adx_strength = signal.get('adx_strength', '').upper()
+        
+        # Planning doc 03_PRICE_ACTION_LOGIC_5M.md: ADX >= 25 AND not WEAK
         if adx is not None and adx < self.config.min_adx:
             logger.info(f"5M Skip: ADX {adx} < {self.config.min_adx}")
+            return False
+        
+        # CRITICAL FIX: Check ADX strength is not WEAK (per planning compliance)
+        if adx_strength == "WEAK":
+            logger.info(f"5M Skip: ADX strength is WEAK (requires MODERATE or STRONG)")
             return False
         
         conf_score = signal.get('conf_score', 0)
